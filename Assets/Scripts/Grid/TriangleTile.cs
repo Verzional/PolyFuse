@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using PolyFuse.Core;
+using PolyFuse.Juice;
 using UnityEngine;
 
 namespace PolyFuse.Grid
@@ -17,12 +18,14 @@ namespace PolyFuse.Grid
         [SerializeField] private Color _emptyColor = new Color(0.14f, 0.16f, 0.22f, 1.0f);
         private Color _currentColor;
         private Color _occupiedColor;
+        private bool _isAnticipationGlow;
 
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
         private MaterialPropertyBlock _propBlock;
         private PolygonCollider2D _collider;
         private Coroutine _animCoroutine;
+        private Coroutine _glowCoroutine;
 
         public GridCoord Coord => new GridCoord(_row, _col);
         public int Row => _row;
@@ -41,12 +44,10 @@ namespace PolyFuse.Grid
             _meshRenderer = GetComponent<MeshRenderer>();
             _propBlock = new MaterialPropertyBlock();
 
-            // Procedural mesh
             _meshFilter.sharedMesh = TriangleMeshHelper.CreateTriangleMesh(IsPointingUp, 0.93f);
             _meshRenderer.sharedMaterial = TriangleMeshHelper.GetDefaultMaterial();
             _meshRenderer.sortingOrder = 0;
 
-            // Setup Collider for raycasting
             _collider = GetComponent<PolygonCollider2D>();
             if (_collider == null)
             {
@@ -82,6 +83,8 @@ namespace PolyFuse.Grid
         {
             _isOccupied = occupied;
             _occupiedColor = color;
+            ClearAnticipationGlow();
+
             if (occupied)
             {
                 SetColor(color);
@@ -95,7 +98,7 @@ namespace PolyFuse.Grid
 
         public void SetGhostPreview(bool active, Color color)
         {
-            if (_isOccupied) return;
+            if (_isOccupied || _isAnticipationGlow) return;
 
             if (active)
             {
@@ -106,6 +109,50 @@ namespace PolyFuse.Grid
             {
                 SetColor(_emptyColor);
             }
+        }
+
+        public void SetAnticipationGlow(bool active, Color shapeColor)
+        {
+            _isAnticipationGlow = active;
+
+            if (active)
+            {
+                if (_glowCoroutine != null) StopCoroutine(_glowCoroutine);
+                _glowCoroutine = StartCoroutine(AnimateAnticipationPulse(shapeColor));
+            }
+            else
+            {
+                ClearAnticipationGlow();
+            }
+        }
+
+        public void ClearAnticipationGlow()
+        {
+            _isAnticipationGlow = false;
+            if (_glowCoroutine != null)
+            {
+                StopCoroutine(_glowCoroutine);
+                _glowCoroutine = null;
+            }
+            SetColor(_isOccupied ? _occupiedColor : _emptyColor);
+            transform.localScale = Vector3.one;
+        }
+
+        private IEnumerator AnimateAnticipationPulse(Color shapeColor)
+        {
+            Color baseColor = _isOccupied ? _occupiedColor : shapeColor;
+            Color glowColor = Color.white * 1.6f;
+
+            while (_isAnticipationGlow)
+            {
+                float t = (Mathf.Sin(Time.unscaledTime * 14f) + 1f) * 0.5f;
+                SetColor(Color.Lerp(baseColor, glowColor, t * 0.75f));
+                float s = Mathf.Lerp(1.0f, 1.08f, t);
+                transform.localScale = Vector3.one * s;
+                yield return null;
+            }
+
+            transform.localScale = Vector3.one;
         }
 
         public void SetColor(Color c)
@@ -120,6 +167,21 @@ namespace PolyFuse.Grid
             _meshRenderer.SetPropertyBlock(_propBlock);
         }
 
+        private void OnDisable()
+        {
+            if (_animCoroutine != null)
+            {
+                StopCoroutine(_animCoroutine);
+                _animCoroutine = null;
+            }
+            if (_glowCoroutine != null)
+            {
+                StopCoroutine(_glowCoroutine);
+                _glowCoroutine = null;
+            }
+            transform.localScale = Vector3.one;
+        }
+
         public void PlayPlacementPop()
         {
             if (_animCoroutine != null) StopCoroutine(_animCoroutine);
@@ -129,18 +191,41 @@ namespace PolyFuse.Grid
         private IEnumerator AnimatePop()
         {
             Vector3 origScale = Vector3.one;
-            Vector3 popScale = new Vector3(1.22f, 1.22f, 1f);
             float elapsed = 0f;
-            float dur = 0.16f;
+            float dur = 0.22f;
 
             while (elapsed < dur)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float t = elapsed / dur;
-                float s = Mathf.Sin(t * Mathf.PI);
-                transform.localScale = Vector3.Lerp(origScale, popScale, s);
+                float t = Mathf.Clamp01(elapsed / dur);
+
+                float scaleFactor;
+                if (t < 0.35f)
+                {
+                    // Elastic Punch: 1.0 -> 1.18x
+                    float subT = t / 0.35f;
+                    float ease = Mathf.Sin(subT * Mathf.PI * 0.5f);
+                    scaleFactor = Mathf.Lerp(1.0f, 1.18f, ease);
+                }
+                else if (t < 0.70f)
+                {
+                    // Elastic Squash: 1.18x -> 0.92x
+                    float subT = (t - 0.35f) / 0.35f;
+                    float ease = 0.5f * (1f - Mathf.Cos(subT * Mathf.PI));
+                    scaleFactor = Mathf.Lerp(1.18f, 0.92f, ease);
+                }
+                else
+                {
+                    // Elastic Settle: 0.92x -> 1.0x
+                    float subT = (t - 0.70f) / 0.30f;
+                    float ease = Mathf.Sin(subT * Mathf.PI * 0.5f);
+                    scaleFactor = Mathf.Lerp(0.92f, 1.0f, ease);
+                }
+
+                transform.localScale = new Vector3(origScale.x * scaleFactor, origScale.y * scaleFactor, origScale.z);
                 yield return null;
             }
+
             transform.localScale = origScale;
             _animCoroutine = null;
         }
@@ -153,7 +238,13 @@ namespace PolyFuse.Grid
 
         private IEnumerator AnimateClearFlash(Action onComplete)
         {
-            Color startColor = Color.white * 1.5f;
+            Color burstColor = _occupiedColor != Color.clear ? _occupiedColor : Color.cyan;
+            if (ProceduralParticleManager.Instance != null)
+            {
+                ProceduralParticleManager.Instance.SpawnTileShatter(transform.position, burstColor, IsPointingUp);
+            }
+
+            Color startColor = Color.white * 1.8f;
             Color targetColor = _emptyColor;
             Vector3 origScale = Vector3.one;
             float elapsed = 0f;

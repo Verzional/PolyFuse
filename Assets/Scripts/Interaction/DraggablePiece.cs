@@ -170,17 +170,20 @@ namespace PolyFuse.Interaction
         private void EndDragging()
         {
             _isDragging = false;
+            if (_board != null)
+            {
+                _board.ClearGhostPreviews();
+                _board.ClearAnticipationGlow();
+            }
 
-            if (_currentHoverAnchor.HasValue && _board.CanPlaceShape(_shape, _currentHoverAnchor.Value))
+            if (_currentHoverAnchor.HasValue && _board != null && _board.CanPlaceShape(_shape, _currentHoverAnchor.Value))
             {
                 GridCoord placedAnchor = _currentHoverAnchor.Value;
-                _board.ClearGhostPreviews();
                 _currentHoverAnchor = null;
                 OnPiecePlaced?.Invoke(this, placedAnchor);
             }
             else
             {
-                _board.ClearGhostPreviews();
                 _currentHoverAnchor = null;
                 _returnAnim = StartCoroutine(ReturnToSlot());
             }
@@ -213,11 +216,34 @@ namespace PolyFuse.Interaction
             {
                 _currentHoverAnchor = closestTile.Coord;
                 _board.SetGhostPreview(_shape, closestTile.Coord);
+
+                // Pre-Snap Line Clear Anticipation Glow
+                List<GridCoord> willClear = _board.GetCompletedLinesIfPlaced(_shape, closestTile.Coord);
+                if (willClear != null && willClear.Count > 0)
+                {
+                    _board.SetAnticipationGlow(willClear, _shape.defaultColor);
+                }
+                else
+                {
+                    _board.ClearAnticipationGlow();
+                }
             }
             else
             {
                 _currentHoverAnchor = null;
                 _board.ClearGhostPreviews();
+                _board.ClearAnticipationGlow();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_returnAnim != null)
+            {
+                StopCoroutine(_returnAnim);
+                _returnAnim = null;
+                transform.position = _slotRestPosition;
+                transform.localScale = Vector3.one * _trayScale;
             }
         }
 
@@ -236,21 +262,36 @@ namespace PolyFuse.Interaction
             transform.localScale = endScale;
         }
 
+        /// <summary>
+        /// Elastic cubic overshoot easing (Out-Back) for juicy tactile spring return.
+        /// </summary>
+        private static float EaseOutBack(float t, float overshoot = 1.65f)
+        {
+            float t1 = t - 1f;
+            return 1f + (overshoot + 1f) * t1 * t1 * t1 + overshoot * t1 * t1;
+        }
+
         private IEnumerator ReturnToSlot()
         {
             Vector3 startPos = transform.position;
             Vector3 startScale = transform.localScale;
             Vector3 endScale = Vector3.one * _trayScale;
             float elapsed = 0f;
-            float duration = 0.2f;
+            float duration = 0.26f;
 
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float t = elapsed / duration;
-                float ease = 1f - Mathf.Pow(1f - t, 3f);
-                transform.position = Vector3.Lerp(startPos, _slotRestPosition, ease);
-                transform.localScale = Vector3.Lerp(startScale, endScale, ease);
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                // Elastic spring overshoot on position
+                float easePos = EaseOutBack(t, 1.65f);
+                transform.position = Vector3.LerpUnclamped(startPos, _slotRestPosition, easePos);
+
+                // Smooth cubic ease on scale return
+                float easeScale = 1f - Mathf.Pow(1f - t, 3f);
+                transform.localScale = Vector3.Lerp(startScale, endScale, easeScale);
+
                 yield return null;
             }
 
