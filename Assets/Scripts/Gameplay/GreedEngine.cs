@@ -11,21 +11,27 @@ namespace PolyFuse.Gameplay
         [SerializeField] private int _multiClearBonus = 150;
         [SerializeField] private int _boardWipeBonus = 1000;
 
+        [Header("Combo Tuning")]
+        [SerializeField] private int _comboGraceTurns = 3; // Combo lasts 3 pieces without clear
+
         [Header("Live State")]
         [SerializeField] private int _currentScore;
         [SerializeField] private int _highScore;
         [SerializeField] private int _comboStreak;
+        [SerializeField] private int _graceRemaining;
 
         private const string HighScoreKey = "PolyFuse_HighScore";
 
         public int CurrentScore => _currentScore;
         public int HighScore => _highScore;
         public int ComboStreak => _comboStreak;
+        public int GraceRemaining => _graceRemaining;
+        public int MaxGraceTurns => _comboGraceTurns;
         public float AudioPitchMultiplier => 1.0f + (_comboStreak * 0.12f);
         public int Multiplier => Mathf.Max(1, _comboStreak);
 
-        public event Action<int, int> OnScoreChanged;
-        public event Action<int, float> OnComboChanged;
+        public event Action<int, int> OnScoreChanged; // (currentScore, pointsDelta)
+        public event Action<int, int, float> OnComboChanged; // (comboStreak, graceRemaining, audioPitch)
         public event Action<int> OnBoardWipe;
 
         private void Awake()
@@ -37,8 +43,9 @@ namespace PolyFuse.Gameplay
         {
             _currentScore = 0;
             _comboStreak = 0;
+            _graceRemaining = 0;
             OnScoreChanged?.Invoke(_currentScore, 0);
-            OnComboChanged?.Invoke(_comboStreak, 1.0f);
+            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, 1.0f);
         }
 
         public void RecordPiecePlacement(int unitCount)
@@ -53,8 +60,9 @@ namespace PolyFuse.Gameplay
 
             if (clearResult.HasAnyClear)
             {
-                // Increment Greed Combo Streak
+                // Line clear triggered: Increment streak and reset grace turns buffer to 3
                 _comboStreak++;
+                _graceRemaining = _comboGraceTurns;
                 int mult = _comboStreak;
 
                 // 3-Axis Line clears points
@@ -78,11 +86,20 @@ namespace PolyFuse.Gameplay
             }
             else
             {
-                // No clear this turn -> combo resets to 0
-                _comboStreak = 0;
+                // No line clear this turn
+                if (_comboStreak > 0)
+                {
+                    _graceRemaining--;
+                    if (_graceRemaining <= 0)
+                    {
+                        // Buffer fully expired -> drop combo back to 0
+                        _comboStreak = 0;
+                        _graceRemaining = 0;
+                    }
+                }
             }
 
-            OnComboChanged?.Invoke(_comboStreak, AudioPitchMultiplier);
+            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, AudioPitchMultiplier);
             return totalPointsGained;
         }
 
