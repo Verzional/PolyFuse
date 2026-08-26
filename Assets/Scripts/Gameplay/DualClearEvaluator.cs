@@ -89,7 +89,7 @@ namespace PolyFuse.Gameplay
             // 2. Slash Lines (+60°)
             foreach (var kvp in _slashGroups)
             {
-                if (kvp.Value.Count >= 4 && IsGroupFullyOccupied(kvp.Value))
+                if (kvp.Value.Count >= 3 && IsGroupFullyOccupied(kvp.Value))
                 {
                     result.slashLines++;
                     foreach (var coord in kvp.Value) result.tilesToClear.Add(coord);
@@ -99,7 +99,7 @@ namespace PolyFuse.Gameplay
             // 3. Backslash Lines (120°)
             foreach (var kvp in _backslashGroups)
             {
-                if (kvp.Value.Count >= 4 && IsGroupFullyOccupied(kvp.Value))
+                if (kvp.Value.Count >= 3 && IsGroupFullyOccupied(kvp.Value))
                 {
                     result.backslashLines++;
                     foreach (var coord in kvp.Value) result.tilesToClear.Add(coord);

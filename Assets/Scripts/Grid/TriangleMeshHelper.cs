@@ -59,11 +59,11 @@ namespace PolyFuse.Grid
             return mesh;
         }
 
-        public static Vector3 GridToWorldPosition(int row, int col)
+        public static Vector3 GridToWorldPosition(int row, int col, int radius = 3)
         {
             bool isUp = (((row + col) % 2) + 2) % 2 == 0;
             float x = col * HalfWidth;
-            float y = (row - 4f) * Height + (isUp ? (Height / 3f) : (2f * Height / 3f));
+            float y = (row - radius) * Height + (isUp ? (Height / 3f) : (2f * Height / 3f));
             return new Vector3(x, y, 0f);
         }
 
