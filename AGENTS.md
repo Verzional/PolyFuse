@@ -6,10 +6,10 @@
 
 * **Project Title:** PolyFuse
 * **Genre:** Endless Spatial Strategy / Polyform Placement Puzzle
-* **Target Platforms:** Mobile (iOS / Android) & Desktop (Mac / PC / WebGL)
+* **Target Platforms:** Mobile (iOS / Android Portrait) & Desktop (Mac / PC / WebGL)
 * **Engine:** Unity (2D)
 * **Core Inspiration:** *Block Blast* (Retention loop, combo momentum, escalating sensory juice) $\times$ Archimedean Polyform Geometry.
-* **Elevator Pitch:** An endless, turn-based spatial placement puzzle where players fit distinct geometric shapes—**Triangles, Diamonds, Trapezoids, and Hexagons**—into a single unified isometric canvas. Scoring is driven by a dual-clearing engine (3-Axis Straight Lines + 6-Unit Hex Core Implosions) backed by an escalating turn-by-turn combo multiplier ("The Greed Engine").
+* **Elevator Pitch:** An endless, turn-based spatial placement puzzle where players fit distinct geometric shapes—**Triangles, Diamonds, Trapezoids, and Hexagons**—into a single unified isometric canvas. Scoring is driven by a 3-Axis line-clearing engine backed by an escalating turn-by-turn combo multiplier ("The Greed Engine") and a 3-piece grace buffer.
 
 ---
 
@@ -18,67 +18,67 @@
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                          1. The Hand (Tray)                            │
-│           Spawns 3 randomized polyform pieces (1 to 6 units)           │
+│    Spawns 3 solvable polyform pieces (1 to 6 units) via Lookahead      │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        2. Placement & Snapping                         │
 │       Drag & drop onto empty triangular slots on the isometric grid    │
+│    Pre-Snap Line Anticipation: Glows lines about to clear on hover     │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                      3. Dual-Clear Evaluation                          │
-│   Check A: 3-Axis Lines (—, /, \)     Check B: 6-Unit Hex-Core Implosion │
+│                        3. 3-Axis Line Clearing                         │
+│   Horizontal Axis (—) | Diagonal Slash (/) | Diagonal Backslash (\)    │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   4. Combo Escalation / Game Over                      │
-│   Clear Triggered: Combo Multiplier +1, Pitch Scales Up, Board Wipes   │
-│   No Clear: Combo resets to 0                                          │
+│   Clear Triggered: Combo +1, Grace Refills to 3, Melodic Note Plays    │
+│   No Clear: Grace -1 (Drops after 3 turns without clears)              │
 │   Tray Empty: Deal 3 new pieces | No Valid Placements: Game Over       │
 └────────────────────────────────────────────────────────────────────────┘
-
 ```
 
-### The Isometric Polyform Canvas
+### The Isometric Polyform Canvas (Radius 3 - 54 Tiles)
 
 The board is an isometric canvas composed of interlocking equilateral triangular slots ($60^\circ$ interior angles). Triangles alternate orientation between Up ($\blacktriangle$) and Down ($\blacktriangledown$).
+* **Radius:** $R = 3$ (6 rows, $r \in [0, 5]$).
+* **Row Spans:** `halfWidths = [3, 4, 5, 5, 4, 3]` producing smooth, flat hexagonal perimeter boundaries (7, 9, 11, 11, 9, 7 tiles per row; total 54 tiles).
 
 ### The 4 Unit Shapes (Macro Pieces)
 
 | Shape Name | Unit Value | Geometric Composition | Strategic Role |
 | --- | --- | --- | --- |
-| **The Shard** | 1 Unit | $1\times$ Single Triangle ($\blacktriangle$ or $\blacktriangledown$) | Precision gap-filler; saves runs from tight dead-ends. |
-| **The Blade** | 2 Units | $2\times$ Triangles sharing a base edge (Diamond / Rhombus) | Fast diagonal bridging; sets up multi-line intersections. |
-| **The Cleaver** | 3 Units | $3\times$ Triangles in a row (Trapezoid / Chevron) | High-volume board filler; requires structural foresight. |
-| **The Core** | 6 Units | $6\times$ Triangles forming a complete regular Hexagon | High risk, massive footprint; triggers instant board wipe. |
+| **The Shard** | 1 Unit | $1\times$ Single Triangle ($\blacktriangle$ or $\blacktriangledown$) | Precision gap-filler; completes lines and saves runs. |
+| **The Blade** | 2 Units | $2\times$ Triangles sharing a base/edge (Diamond / Rhombus) | Fast diagonal bridging; sets up multi-line intersections. |
+| **The Cleaver** | 3 Units | $3\times$ Triangles in a row (Trapezoid strip) | High-volume board filler; requires structural foresight. |
+| **The Core** | 6 Units | $6\times$ Triangles forming a regular Hexagon | High risk, massive footprint; strategic macro filler. |
 
 ---
 
-### The Dual-Clearing Win State
+### The 3-Axis Line-Clearing System
 
-1. **3-Axis Line Clears:** Completing an unbroken line of occupied triangles across any of the 3 isometric axes:
-* **Horizontal Axis (`—`):** Full horizontal row.
-* **Diagonal Up Axis (`/`):** $60^\circ$ diagonal row.
-* **Diagonal Down Axis (`\`):** $120^\circ$ diagonal row.
-
-
-2. **Hex-Core Detonation:** Completely filling all 6 triangular segments of any pre-defined Hexagonal sub-cell.
-* *Payoff:* The core implodes radially, clearing all 6 internal units and granting a high-value flat point bonus + screen shockwave.
-
-
+Board clearing is evaluated across all 3 isometric grid axes:
+1. **Horizontal Axis (`—`):** Full horizontal rows.
+2. **Diagonal Slash Axis (`/`):** $+60^\circ$ diagonal lines ($\ge 3$ tiles).
+3. **Diagonal Backslash Axis (`\`):** $120^\circ$ diagonal lines ($\ge 3$ tiles).
 
 ---
 
-## 3. Retention Architecture: The Greed Engine
+## 3. Retention Architecture: The Greed Engine & 3-Piece Buffer
 
-* **Turn-by-Turn Combo Streak:**
-* Placing a piece that triggers $\ge 1$ clear increments the combo counter ($1\times \to 2\times \to 3\times \dots \to N\times$).
-* Placing a piece that does **not** trigger a clear resets the combo counter to $0\times$.
-
-
-* **The Push-Your-Luck Dilemma:** Players are incentivized to intentionally crowd the board to stage massive multi-line / core intersections rather than taking safe, single-line clears.
-* **Flawless Death Attribution:** Turn-based pacing gives players 100% agency. Game overs are directly attributed to player greed rather than reflex failure.
+* **3-Turn Combo Grace Buffer:**
+  * Triggering $\ge 1$ line clear increments the combo streak ($1\times \to 2\times \dots$) and resets the grace buffer to **3 turns**.
+  * Placing a piece without a clear decrements the grace buffer ($3 \to 2 \to 1 \to 0$).
+  * The combo streak and score multiplier are preserved during the 3 grace turns; if 3 non-clearing pieces are placed in a row, the streak resets to 0.
+* **Escalating Combo Hype Tiers:**
+  * $2\times$: `COMBO ×2!` *(Warm Gold)*
+  * $3\times$: `GREAT! ×3` *(Electric Amber)*
+  * $4\times$: `AMAZING! ×4` *(Neon Coral)*
+  * $5\times$: `UNSTOPPABLE! ×5` *(Vibrant Magenta)*
+  * $6\times$: `INCREDIBLE! ×6` *(Electric Cyan)*
+  * $7\times+$: `POLYFUSE GOD! ×N` *(Prismatic Purple)*
 
 ---
 
@@ -87,53 +87,39 @@ The board is an isometric canvas composed of interlocking equilateral triangular
 ### A. Grid Coordinate System
 
 The grid is modeled as a 2D matrix `grid[row, col]`:
-
-* **Parity Check:** If `(row + col) % 2 == 0` $\to$ Triangle points Up ($\blacktriangle$). Else $\to$ Triangle points Down ($\blacktriangledown$).
+* **Parity Check:** If `((row + col) % 2 == 0)` $\to$ Triangle points Up ($\blacktriangle$). Else $\to$ Triangle points Down ($\blacktriangledown$).
 * **World Space Conversion:**
 
 $$\text{Position.x} = \text{col} \times \left(\frac{\text{Width}}{2}\right)$$
 
+$$\text{Position.y} = (\text{row} - \text{Radius}) \times \text{Height} + (\text{isUp} ? \frac{\text{Height}}{3} : \frac{2 \times \text{Height}}{3})$$
 
-$$\text{Position.y} = \text{row} \times \text{Height}$$
+### B. Procedural Piece Generation (Lookahead Solver & Adaptive Parity)
 
+* **Full 3-Piece Lookahead Solver (`IsBatchFullySolvable`):**
+  * Evaluates all 6 permutations of the 3 candidate pieces on a virtual board simulation (`VirtualBoard`).
+  * Accounts for lines cleared by early pieces opening up space for later pieces. Batches are only dealt if 100% solvable.
+* **Adaptive Parity Balancer:**
+  * Tracks live empty Up ($\blacktriangle$) vs. Down ($\blacktriangledown$) tile counts, dynamically biasing spawned shapes toward the needed orientation to maintain board equilibrium.
+* **Line-Completer Emergency Rescue Mode:**
+  * When fill ratio $\ge 45\%$, detects the nearest-to-complete line and synthesizes the exact missing shape (Shard, Blade, Cleaver) to guarantee a line clear.
 
-* **Data per Cell:**
-```csharp
-public class TriangleTile : MonoBehaviour {
-    public int row;
-    public int col;
-    public bool isPointingUp;
-    public bool isOccupied;
-    public int hexCoreID; // ID of the 6-unit hexagon this tile belongs to
-}
+### C. Mobile Resolution & Camera Adapter
 
-```
-
-
-
-### B. Procedural Piece Generation (Anti-Softlock Bag System)
-
-To ensure long runs remain fair:
-
-* **The Hand:** Always spawns in batches of 3 pieces.
-* **Solver Validation:** Before presenting a 3-piece batch, the generator runs a quick board check: at least 1 of the 3 generated pieces **must** have a valid coordinate placement on the current board state.
-* **Weight Distribution:**
-* 1–2 Unit Pieces (Shard, Blade): ~50%
-* 3 Unit Pieces (Cleaver): ~35%
-* 6 Unit Pieces (Hex Core): ~15%
-
-
+* **`MobileResolutionAdapter.cs`:** Dynamically scales `Camera.main.orthographicSize` to fit target world width across any mobile portrait aspect ratio (9:16, 9:19.5, iPad, WebGL).
+* **Native uGUI (`GameUI.cs`):** Built with zero external asset dependencies; CanvasScaler set to Match Width (`matchWidthOrHeight = 0.0f`).
 
 ---
 
 ## 5. Sensory Feedback & "Juice" Palette
 
-| Event | Visual FX | Audio FX | Haptic / Feel |
+| Event | Visual FX | Audio FX | Tactile / Feel |
 | --- | --- | --- | --- |
-| **Piece Snap** | Squash-and-stretch tween ($1.1\times \to 1.0\times$). | Crisp wooden/stone click. | Light haptic tick. |
-| **Line Clear** | White laser cleave along the axis; tiles shatter outward. | Sharp blade/glass chime. | Medium haptic pop. |
-| **Hex Core Implosion** | Inward compression $\to$ radial chromatic shockwave. | Deep bass boom + metallic resonant ring. | Heavy dual rumble. |
-| **Combo Ladder** | Floating animated multiplier badge ($+300 \times 4$). | Sound pitch scales up by $+0.12$ per streak step. | Continuous micro-rumble. |
-| **Hit-Stop** | Freeze `Time.timeScale = 0f` for $0.05\text{s}$ on multi-clears. | Audio low-pass filter during freeze. | Tactile impact pause. |
+| **Hover Preview** | **Pre-Snap Line Anticipation Glow:** Pulse/aura across lines that will clear. | — | Subtle drag elevation. |
+| **Piece Snap** | Elastic squash-and-stretch pop ($1.18\times \to 0.92\times \to 1.0\times$). | Crisp wooden/marble click. | Snappy grid lock. |
+| **Line Clear** | Glowing triangle particle shatter burst + white flash. | Ascending Pentatonic Scale note ($C_4 \to D_4 \to E_4 \dots$). | Medium impact shake. |
+| **Multi-Line Clear** | Screen shake + Axis laser cleave. | Layered crystal arpeggio + sub-bass boom. | **Hit-Stop Freeze** ($0.05\text{s} - 0.08\text{s}$). |
+| **Invalid Drop** | Elastic spring return with cubic overshoot ($+9.4\%$). | Subtle soft thud. | Bouncy tray recovery. |
+| **Board Wipe** | Fullscreen celebration banner + starburst. | Victorious major triad fanfare. | Heavy double shake. |
 
 ---
