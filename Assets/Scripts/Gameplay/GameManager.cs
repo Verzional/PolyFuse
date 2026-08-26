@@ -77,6 +77,11 @@ namespace PolyFuse.Gameplay
                 cam.gameObject.AddComponent<Physics2DRaycaster>();
             }
 
+            if (cam.GetComponent<MobileResolutionAdapter>() == null)
+            {
+                cam.gameObject.AddComponent<MobileResolutionAdapter>();
+            }
+
             // Ensure EventSystem exists with modern InputSystem module
             EventSystem es = FindFirstObjectByType<EventSystem>();
             if (es == null)
@@ -132,7 +137,7 @@ namespace PolyFuse.Gameplay
             _trayManager.OnPiecePlaced += HandlePiecePlaced;
             _trayManager.OnHandDepleted += HandleHandDepleted;
 
-            // Juice & Audio
+            // Juice & Audio & Particles
             if (_juice == null)
             {
                 _juice = GetComponent<JuiceController>() ?? gameObject.AddComponent<JuiceController>();
@@ -140,6 +145,10 @@ namespace PolyFuse.Gameplay
             if (_audio == null)
             {
                 _audio = GetComponent<ProceduralAudio>() ?? gameObject.AddComponent<ProceduralAudio>();
+            }
+            if (FindFirstObjectByType<ProceduralParticleManager>() == null)
+            {
+                gameObject.AddComponent<ProceduralParticleManager>();
             }
 
             // UI
@@ -161,12 +170,12 @@ namespace PolyFuse.Gameplay
             // Event bindings
             _greedEngine.OnScoreChanged += (score, delta) =>
             {
-                if (_ui != null) _ui.UpdateScore(score, _greedEngine.HighScore);
+                if (_ui != null) _ui.UpdateScore(score, _greedEngine.HighScore, delta);
             };
 
-            _greedEngine.OnComboChanged += (combo, pitch) =>
+            _greedEngine.OnComboChanged += (combo, grace, pitch) =>
             {
-                if (_ui != null) _ui.ShowComboBadge(combo, pitch);
+                if (_ui != null) _ui.UpdateComboState(combo, grace, pitch);
             };
         }
 
@@ -204,16 +213,27 @@ namespace PolyFuse.Gameplay
 
             if (result.HasAnyClear)
             {
-                // Multi-line hit-stop
+                // Multi-line hit-stop & punchy screen shake
                 if (result.TotalLines >= 2)
                 {
-                    _juice.TriggerHitStop();
+                    _juice.TriggerMultiLineHitStop(result.TotalLines);
+                    _juice.TriggerMultiLineClearShake(result.TotalLines);
+                }
+                else
+                {
+                    _juice.TriggerLineClearShake();
                 }
 
-                _juice.TriggerLineClearShake();
-                _audio.PlayLineClear(_greedEngine.AudioPitchMultiplier);
+                if (result.TotalLines >= 2)
+                {
+                    _audio.PlayMultiLineClear(result.TotalLines, _greedEngine.ComboStreak);
+                }
+                else
+                {
+                    _audio.PlayLineClear(_greedEngine.ComboStreak);
+                }
 
-                // Trigger clear animation on tiles
+                // Trigger clear animation and particles on tiles
                 foreach (var coord in result.tilesToClear)
                 {
                     TriangleTile tile = _board.GetTile(coord);
@@ -234,6 +254,11 @@ namespace PolyFuse.Gameplay
                         isWipe = false;
                         break;
                     }
+                }
+
+                if (isWipe)
+                {
+                    _audio.PlayBoardWipe();
                 }
 
                 _greedEngine.ProcessTurnClears(result, isWipe);
