@@ -103,25 +103,25 @@ namespace PolyFuse.Core
             categoryList.Add(shape);
         }
 
-        public static ShapeDefinition GetRandomWeightedShape()
+        public static ShapeDefinition GetRandomWeightedShape(bool? requireUp = null)
         {
             float roll = Random.Range(0f, 100f);
-            if (roll < 25f)
+            List<ShapeDefinition> list;
+            if (roll < 25f) list = _shardShapes;
+            else if (roll < 55f) list = _bladeShapes;
+            else if (roll < 85f) list = _cleaverShapes;
+            else list = _coreShapes;
+
+            if (requireUp.HasValue)
             {
-                return _shardShapes[Random.Range(0, _shardShapes.Count)];
+                List<ShapeDefinition> filtered = list.FindAll(s => s.anchorRequiresUp == requireUp.Value);
+                if (filtered.Count > 0)
+                {
+                    return filtered[Random.Range(0, filtered.Count)];
+                }
             }
-            else if (roll < 55f)
-            {
-                return _bladeShapes[Random.Range(0, _bladeShapes.Count)];
-            }
-            else if (roll < 85f)
-            {
-                return _cleaverShapes[Random.Range(0, _cleaverShapes.Count)];
-            }
-            else
-            {
-                return _coreShapes[Random.Range(0, _coreShapes.Count)];
-            }
+
+            return list[Random.Range(0, list.Count)];
         }
     }
 }
