@@ -106,6 +106,130 @@ namespace PolyFuse.Juice
                 float freq = Mathf.Lerp(380f, 95f, t / dur);
                 return Mathf.Sin(2f * Mathf.PI * freq * t) * env * 0.75f;
             });
+
+            // 6. Danger Heartbeat Loop: Punchy, speaker-audible Lub-Dub (~62 BPM)
+            _heartbeatClip = CreateSynthClip("HeartbeatLoop", 0.96f, (t, dur) =>
+            {
+                // "Lub" (First thump at t = 0.0s - 0.20s)
+                if (t < 0.20f)
+                {
+                    float env = Mathf.Exp(-t * 24.0f);
+                    float freq = 75f + 130f * Mathf.Exp(-t * 32.0f); // 205Hz down to 75Hz
+                    float fund = Mathf.Sin(2f * Mathf.PI * freq * t);
+                    float harm = Mathf.Sin(4f * Mathf.PI * freq * t) * 0.55f; // 2nd harmonic
+                    float harm3 = Mathf.Sin(6f * Mathf.PI * freq * t) * 0.25f; // 3rd harmonic
+                    float click = Mathf.Sin(2f * Mathf.PI * 340f * t) * Mathf.Exp(-t * 65.0f) * 0.40f;
+                    return (fund + harm + harm3 + click) * env * 0.95f;
+                }
+                // "Dub" (Second thump at t = 0.26s - 0.46s)
+                else if (t >= 0.25f && t < 0.46f)
+                {
+                    float t2 = t - 0.25f;
+                    float env = Mathf.Exp(-t2 * 26.0f);
+                    float freq = 65f + 110f * Mathf.Exp(-t2 * 34.0f); // 175Hz down to 65Hz
+                    float fund = Mathf.Sin(2f * Mathf.PI * freq * t2);
+                    float harm = Mathf.Sin(4f * Mathf.PI * freq * t2) * 0.50f;
+                    float harm3 = Mathf.Sin(6f * Mathf.PI * freq * t2) * 0.20f;
+                    float click = Mathf.Sin(2f * Mathf.PI * 300f * t2) * Mathf.Exp(-t2 * 65.0f) * 0.30f;
+                    return (fund + harm + harm3 + click) * env * 0.85f;
+                }
+                return 0f;
+            });
+
+            // 7. "CLOSE CALL!" Escape Fanfare
+            _closeCallClip = CreateSynthClip("CloseCall", 0.75f, (t, dur) =>
+            {
+                float env = Mathf.Exp(-t * 4.0f);
+                float f1 = Mathf.Sin(2f * Mathf.PI * 440f * t);        // A4
+                float f2 = Mathf.Sin(2f * Mathf.PI * 554.37f * t) * 0.8f; // C#5
+                float f3 = Mathf.Sin(2f * Mathf.PI * 659.25f * t) * 0.8f; // E5
+                float f4 = Mathf.Sin(2f * Mathf.PI * 880f * t) * 0.6f;    // A5
+                return (f1 + f2 + f3 + f4) * env * 0.55f;
+            });
+
+            // 8. "NEW BEST!" Sparkling Chime Fanfare
+            _newBestClip = CreateSynthClip("NewBest", 0.90f, (t, dur) =>
+            {
+                float env = Mathf.Exp(-t * 3.2f);
+                float f1 = Mathf.Sin(2f * Mathf.PI * 587.33f * t); // D5
+                float f2 = Mathf.Sin(2f * Mathf.PI * 739.99f * t) * 0.8f; // F#5
+                float f3 = Mathf.Sin(2f * Mathf.PI * 880.00f * t) * 0.8f; // A5
+                float f4 = Mathf.Sin(2f * Mathf.PI * 1174.66f * t) * 0.6f; // D6
+                float shimmer = Mathf.Sin(2f * Mathf.PI * 2349.32f * t) * 0.35f * Mathf.Exp(-t * 10f);
+                return (f1 + f2 + f3 + f4 + shimmer) * env * 0.5f;
+            });
+
+            InitHeartbeatSource();
+            UpdateMuteState();
+        }
+
+        private void InitHeartbeatSource()
+        {
+            if (_heartbeatSource == null)
+            {
+                _heartbeatSource = gameObject.AddComponent<AudioSource>();
+            }
+            _heartbeatSource.clip = _heartbeatClip;
+            _heartbeatSource.loop = true;
+            _heartbeatSource.playOnAwake = false;
+            _heartbeatSource.volume = 1.0f;
+            _heartbeatSource.spatialBlend = 0f;
+        }
+
+        private const string SoundPrefKey = "PolyFuse_SoundEnabled";
+        private bool _soundEnabled = true;
+        public bool IsSoundEnabled => _soundEnabled;
+
+        public void SetSoundEnabled(bool enabled)
+        {
+            _soundEnabled = enabled;
+            PlayerPrefs.SetInt(SoundPrefKey, _soundEnabled ? 1 : 0);
+            PlayerPrefs.Save();
+            UpdateMuteState();
+        }
+
+        public void ToggleSound()
+        {
+            SetSoundEnabled(!_soundEnabled);
+        }
+
+        private void UpdateMuteState()
+        {
+            _soundEnabled = PlayerPrefs.GetInt(SoundPrefKey, 1) == 1;
+            if (_audioSource != null) _audioSource.mute = !_soundEnabled;
+            if (_heartbeatSource != null) _heartbeatSource.mute = !_soundEnabled;
+        }
+
+        private AudioSource _heartbeatSource;
+        private AudioClip _heartbeatClip;
+        private AudioClip _closeCallClip;
+        private AudioClip _newBestClip;
+
+        public void PlayHeartbeat(bool active)
+        {
+            if (_heartbeatSource == null) return;
+            if (active && !_heartbeatSource.isPlaying && _soundEnabled)
+            {
+                _heartbeatSource.Play();
+            }
+            else if (!active && _heartbeatSource.isPlaying)
+            {
+                _heartbeatSource.Stop();
+            }
+        }
+
+        public void PlayCloseCallFanfare()
+        {
+            if (_audioSource == null || _closeCallClip == null || !_soundEnabled) return;
+            _audioSource.pitch = 1.0f;
+            _audioSource.PlayOneShot(_closeCallClip, 1.0f);
+        }
+
+        public void PlayNewBestFanfare()
+        {
+            if (_audioSource == null || _newBestClip == null || !_soundEnabled) return;
+            _audioSource.pitch = 1.0f;
+            _audioSource.PlayOneShot(_newBestClip, 1.0f);
         }
 
         private AudioClip CreateSynthClip(string name, float duration, System.Func<float, float, float> generator)
@@ -127,14 +251,14 @@ namespace PolyFuse.Juice
 
         public void PlayPieceSnap()
         {
-            if (_audioSource == null || _snapClickClip == null) return;
+            if (_audioSource == null || _snapClickClip == null || !_soundEnabled) return;
             _audioSource.pitch = Random.Range(0.96f, 1.04f);
             _audioSource.PlayOneShot(_snapClickClip, 0.9f);
         }
 
         public void PlayLineClear(int comboStreak)
         {
-            if (_audioSource == null || _comboChords == null || _comboChords.Length == 0) return;
+            if (_audioSource == null || _comboChords == null || _comboChords.Length == 0 || !_soundEnabled) return;
 
             int index = Mathf.Clamp(comboStreak - 1, 0, _comboChords.Length - 1);
             AudioClip clip = _comboChords[index];
@@ -145,7 +269,7 @@ namespace PolyFuse.Juice
 
         public void PlayMultiLineClear(int lineCount, int comboStreak)
         {
-            if (_audioSource == null) return;
+            if (_audioSource == null || !_soundEnabled) return;
 
             _audioSource.pitch = 1.0f;
             if (_multiLineClip != null)
@@ -157,14 +281,15 @@ namespace PolyFuse.Juice
 
         public void PlayBoardWipe()
         {
-            if (_audioSource == null || _boardWipeClip == null) return;
+            if (_audioSource == null || _boardWipeClip == null || !_soundEnabled) return;
             _audioSource.pitch = 1.0f;
             _audioSource.PlayOneShot(_boardWipeClip, 1.0f);
         }
 
         public void PlayGameOver()
         {
-            if (_audioSource == null || _gameOverClip == null) return;
+            if (_audioSource == null || _gameOverClip == null || !_soundEnabled) return;
+            PlayHeartbeat(false);
             _audioSource.pitch = 1.0f;
             _audioSource.PlayOneShot(_gameOverClip, 0.9f);
         }

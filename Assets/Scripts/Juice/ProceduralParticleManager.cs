@@ -59,6 +59,78 @@ namespace PolyFuse.Juice
             }
         }
 
+        public void SpawnGoldenStarburst(Vector3 position)
+        {
+            int count = 24;
+            Color gold = new Color(1.0f, 0.85f, 0.20f, 1.0f);
+            for (int i = 0; i < count; i++)
+            {
+                GameObject shard = new GameObject("GoldBurstParticle");
+                shard.transform.position = position;
+                shard.transform.SetParent(transform, true);
+
+                MeshFilter mf = shard.AddComponent<MeshFilter>();
+                MeshRenderer mr = shard.AddComponent<MeshRenderer>();
+
+                mf.sharedMesh = (i % 2 == 0) ? _upShardMesh : _downShardMesh;
+                mr.sharedMaterial = _particleMaterial;
+                mr.sortingOrder = 35;
+
+                MaterialPropertyBlock block = new MaterialPropertyBlock();
+                mr.GetPropertyBlock(block);
+                block.SetColor("_Color", gold);
+                block.SetColor("_BaseColor", gold);
+                mr.SetPropertyBlock(block);
+
+                float angle = (i / (float)count) * 360f + Random.Range(-15f, 15f);
+                Vector2 dir = Quaternion.Euler(0f, 0f, angle) * Vector2.right;
+                float speed = Random.Range(3.5f, 7.5f);
+                float rotSpeed = Random.Range(-450f, 450f);
+
+                StartCoroutine(AnimateShard(shard, dir * speed, rotSpeed, gold));
+            }
+        }
+
+        public void SpawnConfettiBurst(Vector3 position)
+        {
+            Color[] colors = new Color[]
+            {
+                new Color(0.20f, 0.90f, 1.0f), // Cyan
+                new Color(1.0f, 0.82f, 0.20f), // Gold
+                new Color(1.0f, 0.35f, 0.50f), // Coral
+                new Color(0.85f, 0.40f, 1.0f)  // Purple
+            };
+
+            int count = 28;
+            for (int i = 0; i < count; i++)
+            {
+                GameObject shard = new GameObject("ConfettiParticle");
+                shard.transform.position = position;
+                shard.transform.SetParent(transform, true);
+
+                MeshFilter mf = shard.AddComponent<MeshFilter>();
+                MeshRenderer mr = shard.AddComponent<MeshRenderer>();
+
+                mf.sharedMesh = (i % 2 == 0) ? _upShardMesh : _downShardMesh;
+                mr.sharedMaterial = _particleMaterial;
+                mr.sortingOrder = 35;
+
+                Color c = colors[i % colors.Length];
+                MaterialPropertyBlock block = new MaterialPropertyBlock();
+                mr.GetPropertyBlock(block);
+                block.SetColor("_Color", c);
+                block.SetColor("_BaseColor", c);
+                mr.SetPropertyBlock(block);
+
+                float angle = Random.Range(0f, 360f);
+                Vector2 dir = Quaternion.Euler(0f, 0f, angle) * Vector2.right;
+                float speed = Random.Range(2.5f, 6.5f);
+                float rotSpeed = Random.Range(-360f, 360f);
+
+                StartCoroutine(AnimateShard(shard, dir * speed, rotSpeed, c));
+            }
+        }
+
         public void SpawnAxisLaser(Vector3 startPos, Vector3 endPos, Color color)
         {
             GameObject laserObj = new GameObject("AxisLaser");
