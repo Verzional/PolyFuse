@@ -115,11 +115,28 @@ $$\text{Position.y} = (\text{row} - \text{Radius}) \times \text{Height} + (\text
 
 | Event | Visual FX | Audio FX | Tactile / Feel |
 | --- | --- | --- | --- |
-| **Hover Preview** | **Pre-Snap Line Anticipation Glow:** Pulse/aura across lines that will clear. | — | Subtle drag elevation. |
-| **Piece Snap** | Elastic squash-and-stretch pop ($1.18\times \to 0.92\times \to 1.0\times$). | Crisp wooden/marble click. | Snappy grid lock. |
-| **Line Clear** | Glowing triangle particle shatter burst + white flash. | Ascending Pentatonic Scale note ($C_4 \to D_4 \to E_4 \dots$). | Medium impact shake. |
-| **Multi-Line Clear** | Screen shake + Axis laser cleave. | Layered crystal arpeggio + sub-bass boom. | **Hit-Stop Freeze** ($0.05\text{s} - 0.08\text{s}$). |
+| **Hover Preview** | **Pre-Snap Line Anticipation Glow:** Pulse/aura across lines that will clear. | — | Subtle drag elevation + Snap magnetism. |
+| **Piece Snap** | Elastic squash-and-stretch pop ($1.18\times \to 0.92\times \to 1.0\times$). | Crisp wooden/marble click. | Light Haptic pulse (`16ms`). |
+| **Line Clear** | Glowing triangle particle shatter burst + white flash. | Ascending Pentatonic Scale note ($C_4 \to D_4 \to E_4 \dots$). | Medium Haptic tick (`38ms`). |
+| **Multi-Line Clear** | Screen shake + Axis laser cleave. | Layered crystal arpeggio + sub-bass boom. | Heavy Haptic buzz (`65ms`) + Hit-Stop ($0.06\text{s}$). |
+| **Danger Mode ($\ge 65\%$)** | Screen edge crimson pulse vignette. | Rhythmic 62 BPM "lub-dub" harmonic heartbeat loop. | Escalating turn-by-turn tension. |
+| **Close Call Escape** | "HEROIC CLEAR!" pop banner + confetti burst. | Triumphant brass major triad fanfare. | Massive adrenaline relief. |
+| **New High Score** | "★ NEW BEST! ★" golden badge pop + 24-shard starburst. | Sparkling D-major chime arpeggio fanfare. | Golden HUD celebration. |
 | **Invalid Drop** | Elastic spring return with cubic overshoot ($+9.4\%$). | Subtle soft thud. | Bouncy tray recovery. |
 | **Board Wipe** | Fullscreen celebration banner + starburst. | Victorious major triad fanfare. | Heavy double shake. |
+
+---
+
+## 6. Retention Architecture & Quality of Life
+
+* **Dynamic Danger Loop:**
+  * When board fill reaches $\ge 65\%$ (approx. 35 tiles occupied out of 54), Danger Mode initiates with a pulsing heartbeat loop.
+  * Clearing lines down below $50\%$ triggers the **"HEROIC CLEAR!"** escape reward banner and fanfare.
+* **Live High Score Chase:**
+  * Tracks high score in real-time, triggering a mid-game golden starburst explosion the moment the player sets a new personal record.
+* **Pause & Settings Modal:**
+  * Procedurally generated anti-aliased gear icon in top-right HUD.
+  * Toggles for Procedural Sound FX and Haptics with `PlayerPrefs` cross-session persistence.
+  * Instant run restart and game resume with timescale freezing.
 
 ---
