@@ -164,6 +164,8 @@ namespace PolyFuse.Interaction
         {
             if (_returnAnim != null) StopCoroutine(_returnAnim);
             _isDragging = true;
+            SetDisabled(false); // Instantly restore 100% saturation and brightness on touch
+            PolyFuse.Juice.HapticFeedbackManager.Instance?.PlayLight();
             StartCoroutine(AnimateScale(_dragScale, 0.10f));
         }
 
@@ -214,6 +216,13 @@ namespace PolyFuse.Interaction
 
             if (closestTile != null && _board.CanPlaceShape(_shape, closestTile.Coord))
             {
+                // Magnetic snap pull
+                if (minDist < 0.65f)
+                {
+                    Vector3 targetPos = closestTile.transform.position + centroid;
+                    transform.position = Vector3.Lerp(transform.position, targetPos, 0.35f);
+                }
+
                 _currentHoverAnchor = closestTile.Coord;
                 _board.SetGhostPreview(_shape, closestTile.Coord);
 
@@ -302,16 +311,22 @@ namespace PolyFuse.Interaction
 
         public void SetDisabled(bool disabled)
         {
-            float alpha = disabled ? 0.35f : 1.0f;
+            float alpha = disabled ? 0.38f : 1.0f;
+            Color baseColor = disabled 
+                ? Color.Lerp(_shape.defaultColor, new Color(0.30f, 0.35f, 0.45f), 0.65f) 
+                : _shape.defaultColor;
+            baseColor.a = alpha;
+
             for (int i = 0; i < _meshRenderers.Count; i++)
             {
-                MaterialPropertyBlock block = new MaterialPropertyBlock();
-                _meshRenderers[i].GetPropertyBlock(block);
-                Color c = _shape.defaultColor;
-                c.a = alpha;
-                block.SetColor("_Color", c);
-                block.SetColor("_BaseColor", c);
-                _meshRenderers[i].SetPropertyBlock(block);
+                if (_meshRenderers[i] != null)
+                {
+                    MaterialPropertyBlock block = new MaterialPropertyBlock();
+                    _meshRenderers[i].GetPropertyBlock(block);
+                    block.SetColor("_Color", baseColor);
+                    block.SetColor("_BaseColor", baseColor);
+                    _meshRenderers[i].SetPropertyBlock(block);
+                }
             }
         }
     }

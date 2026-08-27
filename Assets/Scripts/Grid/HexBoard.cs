@@ -17,6 +17,21 @@ namespace PolyFuse.Grid
         public IReadOnlyDictionary<GridCoord, TriangleTile> Tiles => _tiles;
         public int TotalTileCount => _tiles.Count;
 
+        public int OccupiedTileCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (var kvp in _tiles)
+                {
+                    if (kvp.Value != null && kvp.Value.IsOccupied) count++;
+                }
+                return count;
+            }
+        }
+
+        public float BoardFillRatio => TotalTileCount > 0 ? ((float)OccupiedTileCount / TotalTileCount) : 0f;
+
         private void Awake()
         {
             if (_tiles.Count == 0)
