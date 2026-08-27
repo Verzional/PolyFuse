@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using PolyFuse.Juice;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,10 +21,17 @@ namespace PolyFuse.UI
         [SerializeField] private Text _finalScoreText;
         [SerializeField] private Button _restartButton;
 
+        [Header("Settings & Celebrations")]
+        [SerializeField] private GameObject _settingsModalPanel;
+        [SerializeField] private Button _settingsButton;
+        [SerializeField] private Text _celebrationBannerText;
+        [SerializeField] private CanvasGroup _celebrationCanvasGroup;
+
         private Font _uiFont;
         private Coroutine _scorePunchCoroutine;
         private Coroutine _deltaPopupCoroutine;
         private Coroutine _comboAnimCoroutine;
+        private Coroutine _celebrationCoroutine;
 
         public event Action OnRestartRequested;
 
@@ -75,6 +83,77 @@ namespace PolyFuse.UI
             }
 
             return _uiFont;
+        }
+
+        private static Sprite _gearSprite;
+
+        public static Sprite GetGearSprite()
+        {
+            if (_gearSprite != null) return _gearSprite;
+
+            int size = 128;
+            float center = size * 0.5f;
+            float rHole = 15f;
+            float rHub = 36f;
+            float rTeeth = 52f;
+            int numTeeth = 6;
+            float toothPeriod = (2f * Mathf.PI) / numTeeth;
+
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            Color[] cols = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x + 0.5f) - center;
+                    float dy = (y + 0.5f) - center;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    float alpha = 0f;
+
+                    if (dist >= rHole && dist <= rTeeth)
+                    {
+                        if (dist <= rHub)
+                        {
+                            float innerEdge = Mathf.Clamp01((dist - rHole) / 1.5f);
+                            alpha = innerEdge;
+                        }
+                        else
+                        {
+                            float angle = Mathf.Atan2(dy, dx);
+                            if (angle < 0f) angle += 2f * Mathf.PI;
+                            float modAngle = angle % toothPeriod;
+                            float halfTooth = toothPeriod * 0.5f;
+                            float angleDist = Mathf.Abs(modAngle - halfTooth * 0.5f);
+                            float toothWidth = 0.52f * halfTooth;
+
+                            if (angleDist < toothWidth)
+                            {
+                                float outerEdge = Mathf.Clamp01((rTeeth - dist) / 1.5f);
+                                alpha = outerEdge;
+                            }
+                            else if (angleDist < toothWidth + 0.08f)
+                            {
+                                float sideFade = 1f - (angleDist - toothWidth) / 0.08f;
+                                float outerEdge = Mathf.Clamp01((rTeeth - dist) / 1.5f);
+                                alpha = Mathf.Clamp01(sideFade * outerEdge);
+                            }
+                        }
+                    }
+
+                    cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(cols);
+            tex.Apply();
+
+            _gearSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _gearSprite;
         }
 
         private void EnsureUIHierarchy()
@@ -289,6 +368,67 @@ namespace PolyFuse.UI
             blRt.anchorMin = Vector2.zero;
             blRt.anchorMax = Vector2.one;
             blRt.sizeDelta = Vector2.zero;
+
+            // 4. Top-Right Settings Icon Button
+            GameObject setBtnObj = new GameObject("SettingsButton");
+            setBtnObj.transform.SetParent(canvas.transform, false);
+            RectTransform setRt = setBtnObj.AddComponent<RectTransform>();
+            setRt.anchorMin = new Vector2(1f, 1f);
+            setRt.anchorMax = new Vector2(1f, 1f);
+            setRt.pivot = new Vector2(1f, 1f);
+            setRt.sizeDelta = new Vector2(74f, 74f);
+            setRt.anchoredPosition = new Vector2(-30f, -25f);
+
+            Image setImg = setBtnObj.AddComponent<Image>();
+            setImg.color = new Color(0.12f, 0.15f, 0.22f, 0.9f);
+            AddOutline(setBtnObj, new Color(0.25f, 0.40f, 0.60f, 0.6f), new Vector2(1.5f, -1.5f));
+            _settingsButton = setBtnObj.AddComponent<Button>();
+
+            GameObject setIconObj = new GameObject("GearIcon");
+            setIconObj.transform.SetParent(setBtnObj.transform, false);
+            Image gearImg = setIconObj.AddComponent<Image>();
+            gearImg.sprite = GetGearSprite();
+            gearImg.color = new Color(0.75f, 0.88f, 1.0f, 1.0f);
+            gearImg.raycastTarget = false;
+            RectTransform siRt = setIconObj.GetComponent<RectTransform>();
+            siRt.anchorMin = Vector2.zero;
+            siRt.anchorMax = Vector2.one;
+            siRt.sizeDelta = new Vector2(-24f, -24f);
+
+            _settingsButton.onClick.AddListener(ToggleSettingsModal);
+
+            // 5. Celebration Banner (CLOSE CALL & NEW BEST)
+            GameObject celebObj = new GameObject("CelebrationBanner");
+            celebObj.transform.SetParent(canvas.transform, false);
+            RectTransform celebRt = celebObj.AddComponent<RectTransform>();
+            celebRt.anchorMin = new Vector2(0.5f, 1f);
+            celebRt.anchorMax = new Vector2(0.5f, 1f);
+            celebRt.pivot = new Vector2(0.5f, 1f);
+            celebRt.sizeDelta = new Vector2(700f, 85f);
+            celebRt.anchoredPosition = new Vector2(0f, -320f);
+
+            _celebrationCanvasGroup = celebObj.AddComponent<CanvasGroup>();
+            _celebrationCanvasGroup.blocksRaycasts = false;
+            _celebrationCanvasGroup.alpha = 0f;
+
+            GameObject celebTextObj = new GameObject("CelebrationText");
+            celebTextObj.transform.SetParent(celebObj.transform, false);
+            _celebrationBannerText = celebTextObj.AddComponent<Text>();
+            _celebrationBannerText.font = font;
+            _celebrationBannerText.raycastTarget = false;
+            _celebrationBannerText.text = "★ NEW RECORD! ★";
+            _celebrationBannerText.fontSize = 40;
+            _celebrationBannerText.fontStyle = FontStyle.Bold;
+            _celebrationBannerText.alignment = TextAnchor.MiddleCenter;
+            _celebrationBannerText.color = new Color(1.0f, 0.85f, 0.20f, 1.0f);
+            AddOutline(celebTextObj, new Color(0.15f, 0.10f, 0.02f, 0.95f), new Vector2(2f, -2f));
+            RectTransform ctRt = celebTextObj.GetComponent<RectTransform>();
+            ctRt.anchorMin = Vector2.zero;
+            ctRt.anchorMax = Vector2.one;
+            ctRt.sizeDelta = Vector2.zero;
+
+            // 6. Settings Modal Panel
+            BuildSettingsModal(canvas.transform, font);
         }
 
         private void AddOutline(GameObject target, Color color, Vector2 dist)
@@ -505,6 +645,252 @@ namespace PolyFuse.UI
             {
                 _gameOverPanel.SetActive(false);
             }
+        }
+
+        private Text _soundBtnLabel;
+        private Text _hapticsBtnLabel;
+
+        private void BuildSettingsModal(Transform parent, Font font)
+        {
+            _settingsModalPanel = new GameObject("SettingsModalPanel");
+            _settingsModalPanel.transform.SetParent(parent, false);
+            RectTransform smRt = _settingsModalPanel.AddComponent<RectTransform>();
+            smRt.anchorMin = Vector2.zero;
+            smRt.anchorMax = Vector2.one;
+            smRt.sizeDelta = Vector2.zero;
+
+            Image smBg = _settingsModalPanel.AddComponent<Image>();
+            smBg.color = new Color(0.04f, 0.05f, 0.08f, 0.95f);
+
+            // Dialog Card
+            GameObject cardObj = new GameObject("Card");
+            cardObj.transform.SetParent(_settingsModalPanel.transform, false);
+            RectTransform cardRt = cardObj.AddComponent<RectTransform>();
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.sizeDelta = new Vector2(620f, 620f);
+
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.color = new Color(0.10f, 0.12f, 0.18f, 1.0f);
+            AddOutline(cardObj, new Color(0.20f, 0.85f, 1.0f, 0.6f), new Vector2(2f, -2f));
+
+            // Title
+            GameObject titleObj = new GameObject("SettingsTitle");
+            titleObj.transform.SetParent(cardObj.transform, false);
+            Text title = titleObj.AddComponent<Text>();
+            title.font = font;
+            title.text = "PAUSED";
+            title.fontSize = 42;
+            title.fontStyle = FontStyle.Bold;
+            title.alignment = TextAnchor.MiddleCenter;
+            title.color = Color.white;
+            RectTransform tRt = titleObj.GetComponent<RectTransform>();
+            tRt.anchorMin = new Vector2(0f, 1f);
+            tRt.anchorMax = new Vector2(1f, 1f);
+            tRt.pivot = new Vector2(0.5f, 1f);
+            tRt.sizeDelta = new Vector2(0f, 90f);
+            tRt.anchoredPosition = new Vector2(0f, -15f);
+
+            // Close Button
+            GameObject closeBtnObj = new GameObject("CloseButton");
+            closeBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform cbRt = closeBtnObj.AddComponent<RectTransform>();
+            cbRt.anchorMin = new Vector2(1f, 1f);
+            cbRt.anchorMax = new Vector2(1f, 1f);
+            cbRt.pivot = new Vector2(1f, 1f);
+            cbRt.sizeDelta = new Vector2(60f, 60f);
+            cbRt.anchoredPosition = new Vector2(-15f, -15f);
+            Button closeBtn = closeBtnObj.AddComponent<Button>();
+            closeBtn.onClick.AddListener(CloseSettingsModal);
+
+            GameObject closeTxtObj = new GameObject("Text");
+            closeTxtObj.transform.SetParent(closeBtnObj.transform, false);
+            Text closeTxt = closeTxtObj.AddComponent<Text>();
+            closeTxt.font = font;
+            closeTxt.text = "✕";
+            closeTxt.fontSize = 32;
+            closeTxt.alignment = TextAnchor.MiddleCenter;
+            closeTxt.color = new Color(0.6f, 0.7f, 0.85f, 1f);
+            RectTransform ctRt = closeTxtObj.GetComponent<RectTransform>();
+            ctRt.anchorMin = Vector2.zero;
+            ctRt.anchorMax = Vector2.one;
+            ctRt.sizeDelta = Vector2.zero;
+
+            // Buttons Container with VerticalLayoutGroup for identical spacing
+            GameObject btnContainer = new GameObject("ButtonsContainer");
+            btnContainer.transform.SetParent(cardObj.transform, false);
+            RectTransform bcRt = btnContainer.AddComponent<RectTransform>();
+            bcRt.anchorMin = Vector2.zero;
+            bcRt.anchorMax = Vector2.one;
+            bcRt.sizeDelta = Vector2.zero;
+
+            VerticalLayoutGroup layout = btnContainer.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(45, 45, 105, 35);
+            layout.spacing = 18f;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            // Button 1: Sound FX Toggle
+            CreateSettingsOptionButton(btnContainer.transform, font, "SOUND: ON", out _soundBtnLabel, () =>
+            {
+                ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
+                if (audio != null)
+                {
+                    audio.ToggleSound();
+                    UpdateSettingsButtonLabels();
+                }
+            });
+
+            // Button 2: Haptics Toggle
+            CreateSettingsOptionButton(btnContainer.transform, font, "HAPTICS: ON", out _hapticsBtnLabel, () =>
+            {
+                PolyFuse.Juice.HapticFeedbackManager.Instance?.ToggleHaptics();
+                UpdateSettingsButtonLabels();
+            });
+
+            // Button 3: Restart Run
+            Text dummy;
+            CreateSettingsOptionButton(btnContainer.transform, font, "↺ RESTART RUN", out dummy, () =>
+            {
+                CloseSettingsModal();
+                OnRestartRequested?.Invoke();
+            }, new Color(0.96f, 0.35f, 0.45f, 1.0f));
+
+            // Button 4: Resume
+            CreateSettingsOptionButton(btnContainer.transform, font, "▶ RESUME", out dummy, () =>
+            {
+                CloseSettingsModal();
+            }, new Color(0.20f, 0.85f, 0.95f, 1.0f));
+
+            _settingsModalPanel.SetActive(false);
+            UpdateSettingsButtonLabels();
+        }
+
+        private void CreateSettingsOptionButton(Transform parent, Font font, string initialText, out Text labelText, Action onClick, Color? btnColor = null)
+        {
+            GameObject btnObj = new GameObject("OptButton");
+            btnObj.transform.SetParent(parent, false);
+            Image img = btnObj.AddComponent<Image>();
+            img.color = btnColor ?? new Color(0.18f, 0.22f, 0.32f, 1.0f);
+            Button btn = btnObj.AddComponent<Button>();
+            btn.onClick.AddListener(() => onClick?.Invoke());
+
+            LayoutElement le = btnObj.AddComponent<LayoutElement>();
+            le.minHeight = 92f;
+            le.preferredHeight = 92f;
+            le.flexibleHeight = 0f;
+
+            GameObject lblObj = new GameObject("Label");
+            lblObj.transform.SetParent(btnObj.transform, false);
+            labelText = lblObj.AddComponent<Text>();
+            labelText.font = font;
+            labelText.raycastTarget = false;
+            labelText.text = initialText;
+            labelText.fontSize = 28;
+            labelText.fontStyle = FontStyle.Bold;
+            labelText.alignment = TextAnchor.MiddleCenter;
+            labelText.color = btnColor.HasValue ? new Color(0.06f, 0.07f, 0.10f, 1.0f) : Color.white;
+
+            RectTransform lRt = lblObj.GetComponent<RectTransform>();
+            lRt.anchorMin = Vector2.zero;
+            lRt.anchorMax = Vector2.one;
+            lRt.sizeDelta = Vector2.zero;
+        }
+
+        private void UpdateSettingsButtonLabels()
+        {
+            ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
+            if (_soundBtnLabel != null && audio != null)
+            {
+                _soundBtnLabel.text = audio.IsSoundEnabled ? "SOUND FX:  ON" : "SOUND FX:  MUTED";
+            }
+            if (_hapticsBtnLabel != null && PolyFuse.Juice.HapticFeedbackManager.Instance != null)
+            {
+                _hapticsBtnLabel.text = PolyFuse.Juice.HapticFeedbackManager.Instance.IsHapticsEnabled ? "HAPTICS:  ON" : "HAPTICS:  OFF";
+            }
+        }
+
+        public void ToggleSettingsModal()
+        {
+            if (_settingsModalPanel == null) return;
+            bool active = !_settingsModalPanel.activeSelf;
+            _settingsModalPanel.SetActive(active);
+            Time.timeScale = active ? 0.0f : 1.0f;
+            if (active) UpdateSettingsButtonLabels();
+        }
+
+        public void CloseSettingsModal()
+        {
+            if (_settingsModalPanel != null)
+            {
+                _settingsModalPanel.SetActive(false);
+            }
+            Time.timeScale = 1.0f;
+        }
+
+        public void ShowCloseCallBanner()
+        {
+            if (_celebrationCoroutine != null) StopCoroutine(_celebrationCoroutine);
+            _celebrationCoroutine = StartCoroutine(AnimateCelebrationBanner("HEROIC CLEAR!", new Color(1.0f, 0.40f, 0.55f, 1.0f)));
+        }
+
+        public void ShowNewHighScoreBanner(int newRecord)
+        {
+            if (_highScoreText != null)
+            {
+                _highScoreText.color = new Color(1.0f, 0.88f, 0.20f, 1.0f);
+            }
+            if (_celebrationCoroutine != null) StopCoroutine(_celebrationCoroutine);
+            _celebrationCoroutine = StartCoroutine(AnimateCelebrationBanner("★ NEW BEST! ★", new Color(1.0f, 0.85f, 0.20f, 1.0f)));
+        }
+
+        private IEnumerator AnimateCelebrationBanner(string message, Color color)
+        {
+            if (_celebrationCanvasGroup == null || _celebrationBannerText == null) yield break;
+
+            _celebrationBannerText.text = message;
+            _celebrationBannerText.color = color;
+            _celebrationCanvasGroup.alpha = 1f;
+
+            Transform t = _celebrationCanvasGroup.transform;
+            Vector3 startScale = Vector3.one * 0.70f;
+            Vector3 popScale = Vector3.one * 1.25f;
+            Vector3 normalScale = Vector3.one;
+
+            float elapsed = 0f;
+            float popDur = 0.15f;
+            while (elapsed < popDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                t.localScale = Vector3.Lerp(startScale, popScale, elapsed / popDur);
+                yield return null;
+            }
+
+            elapsed = 0f;
+            float settleDur = 0.12f;
+            while (elapsed < settleDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                t.localScale = Vector3.Lerp(popScale, normalScale, elapsed / settleDur);
+                yield return null;
+            }
+
+            yield return new WaitForSecondsRealtime(1.1f);
+
+            elapsed = 0f;
+            float fadeDur = 0.3f;
+            while (elapsed < fadeDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                _celebrationCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDur);
+                yield return null;
+            }
+
+            _celebrationCanvasGroup.alpha = 0f;
+            _celebrationCoroutine = null;
         }
     }
 }

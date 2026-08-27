@@ -21,6 +21,8 @@ namespace PolyFuse.Gameplay
         [SerializeField] private int _graceRemaining;
 
         private const string HighScoreKey = "PolyFuse_HighScore";
+        private int _startingHighScore;
+        private bool _hasTriggeredNewHighScoreInRun;
 
         public int CurrentScore => _currentScore;
         public int HighScore => _highScore;
@@ -33,10 +35,12 @@ namespace PolyFuse.Gameplay
         public event Action<int, int> OnScoreChanged; // (currentScore, pointsDelta)
         public event Action<int, int, float> OnComboChanged; // (comboStreak, graceRemaining, audioPitch)
         public event Action<int> OnBoardWipe;
+        public event Action<int> OnNewHighScoreAchieved; // (newHighScore)
 
         private void Awake()
         {
             _highScore = PlayerPrefs.GetInt(HighScoreKey, 0);
+            _startingHighScore = _highScore;
         }
 
         public void ResetGame()
@@ -44,6 +48,8 @@ namespace PolyFuse.Gameplay
             _currentScore = 0;
             _comboStreak = 0;
             _graceRemaining = 0;
+            _startingHighScore = _highScore;
+            _hasTriggeredNewHighScoreInRun = false;
             OnScoreChanged?.Invoke(_currentScore, 0);
             OnComboChanged?.Invoke(_comboStreak, _graceRemaining, 1.0f);
         }
@@ -110,6 +116,12 @@ namespace PolyFuse.Gameplay
             {
                 _highScore = _currentScore;
                 PlayerPrefs.SetInt(HighScoreKey, _highScore);
+
+                if (!_hasTriggeredNewHighScoreInRun && (_startingHighScore > 0 || _currentScore >= 100))
+                {
+                    _hasTriggeredNewHighScoreInRun = true;
+                    OnNewHighScoreAchieved?.Invoke(_highScore);
+                }
             }
             OnScoreChanged?.Invoke(_currentScore, points);
         }

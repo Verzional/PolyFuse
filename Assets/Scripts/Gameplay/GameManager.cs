@@ -28,6 +28,7 @@ namespace PolyFuse.Gameplay
 
         private DualClearEvaluator _evaluator;
         private bool _isGameOver;
+        private bool _inDangerMode;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoBootstrapOnPlay()
@@ -67,7 +68,7 @@ namespace PolyFuse.Gameplay
                 cam = camObj.AddComponent<Camera>();
                 camObj.tag = "MainCamera";
             }
-            cam.transform.position = new Vector3(0f, -0.6f, -10f);
+            cam.transform.position = new Vector3(0f, -0.75f, -10f);
             cam.orthographic = true;
             cam.orthographicSize = 7.0f;
             cam.backgroundColor = new Color(0.06f, 0.07f, 0.10f, 1.0f);
@@ -137,7 +138,7 @@ namespace PolyFuse.Gameplay
             _trayManager.OnPiecePlaced += HandlePiecePlaced;
             _trayManager.OnHandDepleted += HandleHandDepleted;
 
-            // Juice & Audio & Particles
+            // Juice & Audio & Particles & Haptics
             if (_juice == null)
             {
                 _juice = GetComponent<JuiceController>() ?? gameObject.AddComponent<JuiceController>();
@@ -149,6 +150,10 @@ namespace PolyFuse.Gameplay
             if (FindFirstObjectByType<ProceduralParticleManager>() == null)
             {
                 gameObject.AddComponent<ProceduralParticleManager>();
+            }
+            if (FindFirstObjectByType<HapticFeedbackManager>() == null)
+            {
+                gameObject.AddComponent<HapticFeedbackManager>();
             }
 
             // UI
@@ -177,11 +182,20 @@ namespace PolyFuse.Gameplay
             {
                 if (_ui != null) _ui.UpdateComboState(combo, grace, pitch);
             };
+
+            _greedEngine.OnNewHighScoreAchieved += (newScore) =>
+            {
+                _audio.PlayNewBestFanfare();
+                if (_ui != null) _ui.ShowNewHighScoreBanner(newScore);
+                ProceduralParticleManager.Instance?.SpawnGoldenStarburst(new Vector3(0f, 1.5f, 0f));
+            };
         }
 
         public void StartNewGame()
         {
             _isGameOver = false;
+            _inDangerMode = false;
+            _audio.PlayHeartbeat(false);
             _board.ResetBoard();
             _greedEngine.ResetGame();
 
@@ -202,6 +216,7 @@ namespace PolyFuse.Gameplay
             _board.PlaceShape(piece.Shape, anchor);
             _greedEngine.RecordPiecePlacement(piece.Shape.UnitCount);
             _audio.PlayPieceSnap();
+            HapticFeedbackManager.Instance?.PlayLight();
 
             // 2. Evaluate 3-Axis Line Clears
             StartCoroutine(ProcessClearsAndTurnFlow());
@@ -227,10 +242,12 @@ namespace PolyFuse.Gameplay
                 if (result.TotalLines >= 2)
                 {
                     _audio.PlayMultiLineClear(result.TotalLines, _greedEngine.ComboStreak);
+                    HapticFeedbackManager.Instance?.PlayHeavy();
                 }
                 else
                 {
                     _audio.PlayLineClear(_greedEngine.ComboStreak);
+                    HapticFeedbackManager.Instance?.PlayMedium();
                 }
 
                 // Trigger clear animation and particles on tiles
@@ -259,6 +276,7 @@ namespace PolyFuse.Gameplay
                 if (isWipe)
                 {
                     _audio.PlayBoardWipe();
+                    HapticFeedbackManager.Instance?.PlayHeavy();
                 }
 
                 _greedEngine.ProcessTurnClears(result, isWipe);
@@ -266,6 +284,22 @@ namespace PolyFuse.Gameplay
             else
             {
                 _greedEngine.ProcessTurnClears(result, false);
+            }
+
+            // Danger Mode Check (Fill >= 65% triggers danger; dropping < 50% escapes with celebration)
+            float fillRatio = _board.BoardFillRatio;
+            if (fillRatio >= 0.65f && !_inDangerMode)
+            {
+                _inDangerMode = true;
+                _audio.PlayHeartbeat(true);
+            }
+            else if (_inDangerMode && fillRatio < 0.50f)
+            {
+                _inDangerMode = false;
+                _audio.PlayHeartbeat(false);
+                _audio.PlayCloseCallFanfare();
+                if (_ui != null) _ui.ShowCloseCallBanner();
+                ProceduralParticleManager.Instance?.SpawnConfettiBurst(Vector3.zero);
             }
 
             // 3. Tray Replenishment
@@ -300,7 +334,10 @@ namespace PolyFuse.Gameplay
         private void TriggerGameOver()
         {
             _isGameOver = true;
+            _inDangerMode = false;
+            _audio.PlayHeartbeat(false);
             _audio.PlayGameOver();
+            HapticFeedbackManager.Instance?.PlayHeavy();
             Debug.Log($"[PolyFuse] GAME OVER! Final Score: {_greedEngine.CurrentScore}");
 
             if (_ui != null)
