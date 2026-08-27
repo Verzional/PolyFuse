@@ -109,8 +109,8 @@ namespace PolyFuse.UI
             headerRt.anchorMin = new Vector2(0f, 1f);
             headerRt.anchorMax = new Vector2(1f, 1f);
             headerRt.pivot = new Vector2(0.5f, 1f);
-            headerRt.sizeDelta = new Vector2(0f, 260f);
-            headerRt.anchoredPosition = new Vector2(0f, -40f);
+            headerRt.sizeDelta = new Vector2(0f, 210f);
+            headerRt.anchoredPosition = new Vector2(0f, -20f);
 
             // High Score Text (At very top)
             GameObject highScoreObj = new GameObject("HighScoreText");
@@ -119,13 +119,13 @@ namespace PolyFuse.UI
             _highScoreText.font = font;
             _highScoreText.raycastTarget = false;
             _highScoreText.text = "BEST  0";
-            _highScoreText.fontSize = 30;
+            _highScoreText.fontSize = 28;
             _highScoreText.fontStyle = FontStyle.Bold;
             _highScoreText.alignment = TextAnchor.MiddleCenter;
             _highScoreText.color = new Color(0.65f, 0.78f, 0.95f, 1.0f);
             AddShadow(highScoreObj, new Color(0f, 0f, 0f, 0.6f), new Vector2(1.5f, -1.5f));
             RectTransform hsRt = highScoreObj.GetComponent<RectTransform>();
-            hsRt.anchorMin = new Vector2(0f, 0.70f);
+            hsRt.anchorMin = new Vector2(0f, 0.72f);
             hsRt.anchorMax = new Vector2(1f, 1.0f);
             hsRt.sizeDelta = Vector2.zero;
 
@@ -136,7 +136,7 @@ namespace PolyFuse.UI
             _scoreText.font = font;
             _scoreText.raycastTarget = false;
             _scoreText.text = "0";
-            _scoreText.fontSize = 84;
+            _scoreText.fontSize = 80;
             _scoreText.fontStyle = FontStyle.Bold;
             _scoreText.alignment = TextAnchor.MiddleCenter;
             _scoreText.color = Color.white;
@@ -153,25 +153,28 @@ namespace PolyFuse.UI
             _scoreDeltaPopup.font = font;
             _scoreDeltaPopup.raycastTarget = false;
             _scoreDeltaPopup.text = "+150";
-            _scoreDeltaPopup.fontSize = 46;
+            _scoreDeltaPopup.fontSize = 42;
             _scoreDeltaPopup.fontStyle = FontStyle.Bold;
             _scoreDeltaPopup.alignment = TextAnchor.MiddleCenter;
             _scoreDeltaPopup.color = new Color(0.20f, 0.90f, 1.0f, 1f);
             AddOutline(popupObj, new Color(0.02f, 0.05f, 0.10f, 0.9f), new Vector2(2f, -2f));
             RectTransform popupRt = popupObj.GetComponent<RectTransform>();
-            popupRt.anchorMin = new Vector2(0.5f, 0.78f);
-            popupRt.anchorMax = new Vector2(0.5f, 0.78f);
-            popupRt.sizeDelta = new Vector2(400f, 80f);
-            popupRt.anchoredPosition = new Vector2(0f, 0f);
+            popupRt.anchorMin = new Vector2(0.5f, 1f);
+            popupRt.anchorMax = new Vector2(0.5f, 1f);
+            popupRt.pivot = new Vector2(0.5f, 0.5f);
+            popupRt.sizeDelta = new Vector2(400f, 70f);
+            popupRt.anchoredPosition = new Vector2(0f, -160f);
             popupObj.SetActive(false);
 
-            // 2. Combo Banner Container (Centered below score)
+            // 2. Combo Banner Container (Directly below Score, completely above the board)
             GameObject comboObj = new GameObject("ComboBanner");
             comboObj.transform.SetParent(canvas.transform, false);
             RectTransform comboRt = comboObj.AddComponent<RectTransform>();
-            comboRt.anchorMin = new Vector2(0.5f, 0.73f);
-            comboRt.anchorMax = new Vector2(0.5f, 0.73f);
-            comboRt.sizeDelta = new Vector2(600f, 120f);
+            comboRt.anchorMin = new Vector2(0.5f, 1f);
+            comboRt.anchorMax = new Vector2(0.5f, 1f);
+            comboRt.pivot = new Vector2(0.5f, 1f);
+            comboRt.sizeDelta = new Vector2(600f, 95f);
+            comboRt.anchoredPosition = new Vector2(0f, -240f);
             _comboCanvasGroup = comboObj.AddComponent<CanvasGroup>();
             _comboCanvasGroup.blocksRaycasts = false;
             _comboCanvasGroup.alpha = 0f;
@@ -183,7 +186,7 @@ namespace PolyFuse.UI
             _comboText.font = font;
             _comboText.raycastTarget = false;
             _comboText.text = "COMBO ×2!";
-            _comboText.fontSize = 48;
+            _comboText.fontSize = 38;
             _comboText.fontStyle = FontStyle.Bold;
             _comboText.alignment = TextAnchor.MiddleCenter;
             _comboText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
@@ -199,8 +202,7 @@ namespace PolyFuse.UI
             _comboPipsText = pipsObj.AddComponent<Text>();
             _comboPipsText.font = font;
             _comboPipsText.raycastTarget = false;
-            _comboPipsText.text = "● ● ●";
-            _comboPipsText.fontSize = 26;
+            _comboPipsText.fontSize = 22;
             _comboPipsText.alignment = TextAnchor.MiddleCenter;
             _comboPipsText.color = new Color(1.0f, 0.90f, 0.45f, 0.95f);
             AddShadow(pipsObj, new Color(0f, 0f, 0f, 0.6f), new Vector2(1.5f, -1.5f));
