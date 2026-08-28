@@ -6,13 +6,16 @@ namespace PolyFuse.Gameplay
     public class GreedEngine : MonoBehaviour
     {
         [Header("Scoring Tuning")]
-        [SerializeField] private int _pointsPerUnitPlaced = 10;
-        [SerializeField] private int _pointsPerLineClear = 100;
-        [SerializeField] private int _multiClearBonus = 150;
-        [SerializeField] private int _boardWipeBonus = 1000;
+        [SerializeField] private int _pointsPerUnitPlaced = 100;
+        [SerializeField] private int _singleLineScore = 1000;
+        [SerializeField] private int _doubleLineScore = 3500;
+        [SerializeField] private int _tripleLineScore = 10000;
+        [SerializeField] private int _quadPlusLineScore = 25000;
+        [SerializeField] private int _boardWipeBonus = 25000;
 
         [Header("Combo Tuning")]
-        [SerializeField] private int _comboGraceTurns = 3; // Combo lasts 3 pieces without clear
+        [SerializeField] private int _comboGraceTurns = 3; // Standard combo grace buffer (3 pieces)
+        [SerializeField] private int _boardWipeGraceTurns = 5; // Extended grace buffer on full board wipe (Solve Winner's Curse)
 
         [Header("Live State")]
         [SerializeField] private int _currentScore;
@@ -29,6 +32,7 @@ namespace PolyFuse.Gameplay
         public int ComboStreak => _comboStreak;
         public int GraceRemaining => _graceRemaining;
         public int MaxGraceTurns => _comboGraceTurns;
+        public int BoardWipeGraceTurns => _boardWipeGraceTurns;
         public float AudioPitchMultiplier => 1.0f + (_comboStreak * 0.12f);
         public int Multiplier => Mathf.Max(1, _comboStreak);
 
@@ -56,7 +60,8 @@ namespace PolyFuse.Gameplay
 
         public void RecordPiecePlacement(int unitCount)
         {
-            int gained = unitCount * _pointsPerUnitPlaced;
+            int mult = Mathf.Max(1, _comboStreak);
+            int gained = unitCount * _pointsPerUnitPlaced * mult;
             AddScore(gained);
         }
 
@@ -66,26 +71,30 @@ namespace PolyFuse.Gameplay
 
             if (clearResult.HasAnyClear)
             {
-                // Line clear triggered: Increment streak and reset grace turns buffer to 3
+                // Line clear triggered: Increment streak
                 _comboStreak++;
-                _graceRemaining = _comboGraceTurns;
-                int mult = _comboStreak;
+                int mult = Mathf.Max(1, _comboStreak);
 
-                // 3-Axis Line clears points
-                int linePoints = clearResult.TotalLines * _pointsPerLineClear * mult;
-                totalPointsGained = linePoints;
-
-                // Multi-line simultaneous combo bonus
-                if (clearResult.TotalLines >= 2)
-                {
-                    totalPointsGained += (clearResult.TotalLines - 1) * _multiClearBonus * mult;
-                }
-
-                // Full Board Wipe
+                // Set grace buffer: board wipe gets extended grace buffer (5 turns) to solve Winner's Curse
                 if (isBoardCompletelyEmpty)
                 {
-                    totalPointsGained += _boardWipeBonus * mult;
-                    OnBoardWipe?.Invoke(_boardWipeBonus * mult);
+                    _graceRemaining = _boardWipeGraceTurns;
+                }
+                else
+                {
+                    _graceRemaining = _comboGraceTurns;
+                }
+
+                // Calculate line clear base points with exponential jackpot scaling
+                int baseLinePoints = CalculateLineClearBaseScore(clearResult.TotalLines);
+                totalPointsGained = baseLinePoints * mult;
+
+                // Full Board Wipe bonus (+25,000 * multiplier)
+                if (isBoardCompletelyEmpty)
+                {
+                    int wipePoints = _boardWipeBonus * mult;
+                    totalPointsGained += wipePoints;
+                    OnBoardWipe?.Invoke(wipePoints);
                 }
 
                 AddScore(totalPointsGained);
@@ -107,6 +116,18 @@ namespace PolyFuse.Gameplay
 
             OnComboChanged?.Invoke(_comboStreak, _graceRemaining, AudioPitchMultiplier);
             return totalPointsGained;
+        }
+
+        public int CalculateLineClearBaseScore(int totalLines)
+        {
+            if (totalLines <= 0) return 0;
+            return totalLines switch
+            {
+                1 => _singleLineScore,
+                2 => _doubleLineScore,
+                3 => _tripleLineScore,
+                _ => _quadPlusLineScore
+            };
         }
 
         private void AddScore(int points)

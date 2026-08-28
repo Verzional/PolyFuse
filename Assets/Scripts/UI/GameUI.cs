@@ -39,6 +39,7 @@ namespace PolyFuse.UI
         private RectTransform _popupRt;
         private RectTransform _celebrationRt;
         private Rect _lastSafeArea;
+        private int _maxGraceInStreak = 3;
 
         public event Action OnRestartRequested;
 
@@ -531,11 +532,21 @@ namespace PolyFuse.UI
         {
             if (comboStreak <= 0)
             {
+                _maxGraceInStreak = 3;
                 if (_comboCanvasGroup != null && _comboCanvasGroup.alpha > 0f)
                 {
                     StartCoroutine(FadeOutCombo());
                 }
                 return;
+            }
+
+            if (graceRemaining > _maxGraceInStreak)
+            {
+                _maxGraceInStreak = graceRemaining;
+            }
+            else if (graceRemaining == 3 && _maxGraceInStreak > 3)
+            {
+                _maxGraceInStreak = 3;
             }
 
             if (_comboText != null)
@@ -557,8 +568,9 @@ namespace PolyFuse.UI
 
             if (_comboPipsText != null)
             {
+                int totalPips = Mathf.Max(3, _maxGraceInStreak);
                 string pips = "";
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < totalPips; i++)
                 {
                     pips += (i < graceRemaining) ? "● " : "○ ";
                 }
