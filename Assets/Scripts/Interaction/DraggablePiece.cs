@@ -16,12 +16,13 @@ namespace PolyFuse.Interaction
         [Header("Tuning")]
         [SerializeField] private float _trayScale = 0.58f;
         [SerializeField] private float _dragScale = 1.0f;
-        [SerializeField] private float _dragVerticalOffset = 1.4f;
-        [SerializeField] private float _snapDistanceThreshold = 1.4f;
+        [SerializeField] private float _dragVerticalOffset = 0.95f; // Elevated comfortably above thumb
+        [SerializeField] private float _snapDistanceThreshold = 1.35f;
 
         private HexBoard _board;
         private Camera _mainCamera;
         private Vector3 _slotRestPosition;
+        private Vector3 _cachedCentroid;
         private bool _isDragging;
         private GridCoord? _currentHoverAnchor;
         private List<MeshRenderer> _meshRenderers = new List<MeshRenderer>();
@@ -41,6 +42,7 @@ namespace PolyFuse.Interaction
             _slotRestPosition = slotRestPos;
             _board = board;
             _mainCamera = Camera.main;
+            _cachedCentroid = CalculateShapeCentroid();
 
             transform.position = slotRestPos;
             transform.localScale = Vector3.one * _trayScale;
@@ -165,7 +167,6 @@ namespace PolyFuse.Interaction
             if (_returnAnim != null) StopCoroutine(_returnAnim);
             _isDragging = true;
             SetDisabled(false); // Instantly restore 100% saturation and brightness on touch
-            PolyFuse.Juice.HapticFeedbackManager.Instance?.PlayLight();
             StartCoroutine(AnimateScale(_dragScale, 0.10f));
         }
 
@@ -195,18 +196,24 @@ namespace PolyFuse.Interaction
         {
             if (_board == null) return;
 
-            Vector3 centroid = CalculateShapeCentroid();
-            Vector3 anchorWorldPos = transform.position - centroid;
+            Vector3 anchorWorldPos = transform.position - _cachedCentroid;
 
             TriangleTile closestTile = null;
             float minDist = _snapDistanceThreshold;
 
-            foreach (var kvp in _board.Tiles)
+            IReadOnlyList<TriangleTile> tiles = _board.TileList;
+            for (int i = 0; i < tiles.Count; i++)
             {
-                TriangleTile tile = kvp.Value;
-                if (tile.IsPointingUp != _shape.anchorRequiresUp) continue;
+                TriangleTile tile = tiles[i];
+                if (tile == null || tile.IsPointingUp != _shape.anchorRequiresUp) continue;
 
-                float dist = Vector2.Distance(anchorWorldPos, tile.transform.position);
+                float dx = anchorWorldPos.x - tile.transform.position.x;
+                float dy = anchorWorldPos.y - tile.transform.position.y;
+
+                // Approaching from below (dy < 0) has generous upward reach
+                float weightY = (dy < 0f) ? 0.50f : 1.30f;
+                float dist = Mathf.Sqrt(dx * dx + (dy * dy) * weightY);
+
                 if (dist < minDist)
                 {
                     minDist = dist;
@@ -216,21 +223,21 @@ namespace PolyFuse.Interaction
 
             if (closestTile != null && _board.CanPlaceShape(_shape, closestTile.Coord))
             {
-                // Magnetic snap pull
-                if (minDist < 0.65f)
+                // Magnetic snap pull smoothly locks piece over target slot
+                if (minDist < 0.85f)
                 {
-                    Vector3 targetPos = closestTile.transform.position + centroid;
-                    transform.position = Vector3.Lerp(transform.position, targetPos, 0.35f);
+                    Vector3 targetPos = closestTile.transform.position + _cachedCentroid;
+                    transform.position = Vector3.Lerp(transform.position, targetPos, 0.40f);
                 }
 
                 _currentHoverAnchor = closestTile.Coord;
                 _board.SetGhostPreview(_shape, closestTile.Coord);
 
                 // Pre-Snap Line Clear Anticipation Glow
-                List<GridCoord> willClear = _board.GetCompletedLinesIfPlaced(_shape, closestTile.Coord);
-                if (willClear != null && willClear.Count > 0)
+                List<GridCoord> previewLines = _board.GetCompletedLinesIfPlaced(_shape, closestTile.Coord);
+                if (previewLines != null && previewLines.Count > 0)
                 {
-                    _board.SetAnticipationGlow(willClear, _shape.defaultColor);
+                    _board.SetAnticipationGlow(previewLines, _shape.defaultColor);
                 }
                 else
                 {

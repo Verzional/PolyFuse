@@ -6,9 +6,9 @@ namespace PolyFuse.Core
     public class MobileResolutionAdapter : MonoBehaviour
     {
         [Header("Target Design Framing (Portrait)")]
-        [SerializeField] private float _targetVisibleWorldWidth = 7.0f; // Width needed to frame board & tray comfortably
-        [SerializeField] private float _minOrthographicSize = 6.2f;
-        [SerializeField] private Vector3 _targetCameraCenter = new Vector3(0f, -0.75f, -10f);
+        [SerializeField] private float _targetVisibleWorldWidth = 7.2f; // Width needed to frame board & tray comfortably
+        [SerializeField] private float _minOrthographicSize = 6.4f;
+        [SerializeField] private Vector3 _targetCameraCenter = new Vector3(0f, -0.95f, -10f);
 
         private Camera _cam;
         private int _lastWidth;

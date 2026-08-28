@@ -33,6 +33,13 @@ namespace PolyFuse.UI
         private Coroutine _comboAnimCoroutine;
         private Coroutine _celebrationCoroutine;
 
+        private RectTransform _headerRt;
+        private RectTransform _settingsBtnRt;
+        private RectTransform _comboRt;
+        private RectTransform _popupRt;
+        private RectTransform _celebrationRt;
+        private Rect _lastSafeArea;
+
         public event Action OnRestartRequested;
 
         private void Awake()
@@ -57,6 +64,55 @@ namespace PolyFuse.UI
             if (_scoreDeltaPopup != null)
             {
                 _scoreDeltaPopup.gameObject.SetActive(false);
+            }
+
+            ApplySafeAreaInsets();
+        }
+
+        private void Update()
+        {
+            if (Screen.safeArea != _lastSafeArea)
+            {
+                ApplySafeAreaInsets();
+            }
+        }
+
+        private void ApplySafeAreaInsets()
+        {
+            Rect safe = Screen.safeArea;
+            if (safe == _lastSafeArea && _headerRt != null && _headerRt.anchoredPosition.y < 0) return;
+            _lastSafeArea = safe;
+
+            float screenH = Screen.height;
+            if (screenH <= 0) return;
+
+            // Inset from top in screen pixels
+            float topInsetPixels = screenH - safe.yMax;
+            float scaleFactor = 1920f / screenH;
+            float topInsetCanvas = topInsetPixels * scaleFactor;
+
+            // Safe top margin (Dynamic Island is ~59pt which scales to ~140px on canvas)
+            float safeTopY = -Mathf.Max(25f, topInsetCanvas + 12f);
+
+            if (_headerRt != null)
+            {
+                _headerRt.anchoredPosition = new Vector2(0f, safeTopY);
+            }
+            if (_settingsBtnRt != null)
+            {
+                _settingsBtnRt.anchoredPosition = new Vector2(-30f, safeTopY - 5f);
+            }
+            if (_comboRt != null)
+            {
+                _comboRt.anchoredPosition = new Vector2(0f, safeTopY - 175f);
+            }
+            if (_popupRt != null)
+            {
+                _popupRt.anchoredPosition = new Vector2(0f, safeTopY - 90f);
+            }
+            if (_celebrationRt != null)
+            {
+                _celebrationRt.anchoredPosition = new Vector2(0f, safeTopY - 260f);
             }
         }
 
@@ -184,16 +240,16 @@ namespace PolyFuse.UI
             // 1. Header Panel (Top Center)
             GameObject headerObj = new GameObject("HeaderPanel");
             headerObj.transform.SetParent(canvas.transform, false);
-            RectTransform headerRt = headerObj.AddComponent<RectTransform>();
-            headerRt.anchorMin = new Vector2(0f, 1f);
-            headerRt.anchorMax = new Vector2(1f, 1f);
-            headerRt.pivot = new Vector2(0.5f, 1f);
-            headerRt.sizeDelta = new Vector2(0f, 210f);
-            headerRt.anchoredPosition = new Vector2(0f, -20f);
+            _headerRt = headerObj.AddComponent<RectTransform>();
+            _headerRt.anchorMin = new Vector2(0f, 1f);
+            _headerRt.anchorMax = new Vector2(1f, 1f);
+            _headerRt.pivot = new Vector2(0.5f, 1f);
+            _headerRt.sizeDelta = new Vector2(0f, 165f);
+            _headerRt.anchoredPosition = new Vector2(0f, -25f);
 
             // High Score Text (At very top)
             GameObject highScoreObj = new GameObject("HighScoreText");
-            highScoreObj.transform.SetParent(headerRt, false);
+            highScoreObj.transform.SetParent(_headerRt, false);
             _highScoreText = highScoreObj.AddComponent<Text>();
             _highScoreText.font = font;
             _highScoreText.raycastTarget = false;
@@ -210,12 +266,12 @@ namespace PolyFuse.UI
 
             // Score Text (Large bold number)
             GameObject scoreObj = new GameObject("ScoreText");
-            scoreObj.transform.SetParent(headerRt, false);
+            scoreObj.transform.SetParent(_headerRt, false);
             _scoreText = scoreObj.AddComponent<Text>();
             _scoreText.font = font;
             _scoreText.raycastTarget = false;
             _scoreText.text = "0";
-            _scoreText.fontSize = 80;
+            _scoreText.fontSize = 76;
             _scoreText.fontStyle = FontStyle.Bold;
             _scoreText.alignment = TextAnchor.MiddleCenter;
             _scoreText.color = Color.white;
@@ -232,28 +288,28 @@ namespace PolyFuse.UI
             _scoreDeltaPopup.font = font;
             _scoreDeltaPopup.raycastTarget = false;
             _scoreDeltaPopup.text = "+150";
-            _scoreDeltaPopup.fontSize = 42;
+            _scoreDeltaPopup.fontSize = 40;
             _scoreDeltaPopup.fontStyle = FontStyle.Bold;
             _scoreDeltaPopup.alignment = TextAnchor.MiddleCenter;
             _scoreDeltaPopup.color = new Color(0.20f, 0.90f, 1.0f, 1f);
             AddOutline(popupObj, new Color(0.02f, 0.05f, 0.10f, 0.9f), new Vector2(2f, -2f));
-            RectTransform popupRt = popupObj.GetComponent<RectTransform>();
-            popupRt.anchorMin = new Vector2(0.5f, 1f);
-            popupRt.anchorMax = new Vector2(0.5f, 1f);
-            popupRt.pivot = new Vector2(0.5f, 0.5f);
-            popupRt.sizeDelta = new Vector2(400f, 70f);
-            popupRt.anchoredPosition = new Vector2(0f, -160f);
+            _popupRt = popupObj.GetComponent<RectTransform>();
+            _popupRt.anchorMin = new Vector2(0.5f, 1f);
+            _popupRt.anchorMax = new Vector2(0.5f, 1f);
+            _popupRt.pivot = new Vector2(0.5f, 0.5f);
+            _popupRt.sizeDelta = new Vector2(400f, 60f);
+            _popupRt.anchoredPosition = new Vector2(0f, -115f);
             popupObj.SetActive(false);
 
             // 2. Combo Banner Container (Directly below Score, completely above the board)
             GameObject comboObj = new GameObject("ComboBanner");
             comboObj.transform.SetParent(canvas.transform, false);
-            RectTransform comboRt = comboObj.AddComponent<RectTransform>();
-            comboRt.anchorMin = new Vector2(0.5f, 1f);
-            comboRt.anchorMax = new Vector2(0.5f, 1f);
-            comboRt.pivot = new Vector2(0.5f, 1f);
-            comboRt.sizeDelta = new Vector2(600f, 95f);
-            comboRt.anchoredPosition = new Vector2(0f, -240f);
+            _comboRt = comboObj.AddComponent<RectTransform>();
+            _comboRt.anchorMin = new Vector2(0.5f, 1f);
+            _comboRt.anchorMax = new Vector2(0.5f, 1f);
+            _comboRt.pivot = new Vector2(0.5f, 1f);
+            _comboRt.sizeDelta = new Vector2(500f, 80f);
+            _comboRt.anchoredPosition = new Vector2(0f, -200f);
             _comboCanvasGroup = comboObj.AddComponent<CanvasGroup>();
             _comboCanvasGroup.blocksRaycasts = false;
             _comboCanvasGroup.alpha = 0f;
@@ -372,12 +428,12 @@ namespace PolyFuse.UI
             // 4. Top-Right Settings Icon Button
             GameObject setBtnObj = new GameObject("SettingsButton");
             setBtnObj.transform.SetParent(canvas.transform, false);
-            RectTransform setRt = setBtnObj.AddComponent<RectTransform>();
-            setRt.anchorMin = new Vector2(1f, 1f);
-            setRt.anchorMax = new Vector2(1f, 1f);
-            setRt.pivot = new Vector2(1f, 1f);
-            setRt.sizeDelta = new Vector2(74f, 74f);
-            setRt.anchoredPosition = new Vector2(-30f, -25f);
+            _settingsBtnRt = setBtnObj.AddComponent<RectTransform>();
+            _settingsBtnRt.anchorMin = new Vector2(1f, 1f);
+            _settingsBtnRt.anchorMax = new Vector2(1f, 1f);
+            _settingsBtnRt.pivot = new Vector2(1f, 1f);
+            _settingsBtnRt.sizeDelta = new Vector2(74f, 74f);
+            _settingsBtnRt.anchoredPosition = new Vector2(-30f, -25f);
 
             Image setImg = setBtnObj.AddComponent<Image>();
             setImg.color = new Color(0.12f, 0.15f, 0.22f, 0.9f);
@@ -400,12 +456,12 @@ namespace PolyFuse.UI
             // 5. Celebration Banner (CLOSE CALL & NEW BEST)
             GameObject celebObj = new GameObject("CelebrationBanner");
             celebObj.transform.SetParent(canvas.transform, false);
-            RectTransform celebRt = celebObj.AddComponent<RectTransform>();
-            celebRt.anchorMin = new Vector2(0.5f, 1f);
-            celebRt.anchorMax = new Vector2(0.5f, 1f);
-            celebRt.pivot = new Vector2(0.5f, 1f);
-            celebRt.sizeDelta = new Vector2(700f, 85f);
-            celebRt.anchoredPosition = new Vector2(0f, -320f);
+            _celebrationRt = celebObj.AddComponent<RectTransform>();
+            _celebrationRt.anchorMin = new Vector2(0.5f, 1f);
+            _celebrationRt.anchorMax = new Vector2(0.5f, 1f);
+            _celebrationRt.pivot = new Vector2(0.5f, 1f);
+            _celebrationRt.sizeDelta = new Vector2(650f, 80f);
+            _celebrationRt.anchoredPosition = new Vector2(0f, -280f);
 
             _celebrationCanvasGroup = celebObj.AddComponent<CanvasGroup>();
             _celebrationCanvasGroup.blocksRaycasts = false;

@@ -11,10 +11,12 @@ namespace PolyFuse.Grid
         [SerializeField] private Transform _tilesParent;
 
         private readonly Dictionary<GridCoord, TriangleTile> _tiles = new Dictionary<GridCoord, TriangleTile>();
+        private readonly List<TriangleTile> _tileList = new List<TriangleTile>();
         private readonly List<GridCoord> _currentGhostCoords = new List<GridCoord>();
 
         public int Radius => _radius;
         public IReadOnlyDictionary<GridCoord, TriangleTile> Tiles => _tiles;
+        public IReadOnlyList<TriangleTile> TileList => _tileList;
         public int TotalTileCount => _tiles.Count;
 
         public int OccupiedTileCount
@@ -22,9 +24,9 @@ namespace PolyFuse.Grid
             get
             {
                 int count = 0;
-                foreach (var kvp in _tiles)
+                for (int i = 0; i < _tileList.Count; i++)
                 {
-                    if (kvp.Value != null && kvp.Value.IsOccupied) count++;
+                    if (_tileList[i] != null && _tileList[i].IsOccupied) count++;
                 }
                 return count;
             }
@@ -63,6 +65,7 @@ namespace PolyFuse.Grid
             }
 
             _tiles.Clear();
+            _tileList.Clear();
 
             // Symmetrical Smooth Hexagon Layout parameterized by Radius (Default: 3):
             // For Radius = 3: 6 rows (r = 0..5), half-widths [3, 4, 5, 5, 4, 3]
@@ -94,6 +97,7 @@ namespace PolyFuse.Grid
             tile.Initialize(coord.r, coord.c);
 
             _tiles[coord] = tile;
+            _tileList.Add(tile);
         }
 
         public bool IsValidCoord(GridCoord coord)
