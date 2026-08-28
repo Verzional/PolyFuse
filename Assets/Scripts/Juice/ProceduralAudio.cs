@@ -52,26 +52,26 @@ namespace PolyFuse.Juice
                 return (knock + body) * env * 0.85f;
             });
 
-            // 2. Ascending Musical Chords for Combo Streaks
+            // 2. Ascending Musical Arpeggios for Combo Streaks
             _comboChords = new AudioClip[ComboFrequencies.Length];
             for (int i = 0; i < ComboFrequencies.Length; i++)
             {
                 float root = ComboFrequencies[i];
+                float third = root * 1.2599f;  // Major 3rd
                 float fifth = root * 1.4983f;  // Perfect 5th
                 float octave = root * 2.0f;     // Octave harmonic
-                float majThird = root * 1.2599f;// Major 3rd
 
-                int chordIndex = i;
-                _comboChords[i] = CreateSynthClip($"ComboChord_{i}", 0.38f, (t, dur) =>
+                _comboChords[i] = CreateSynthClip($"ComboChord_{i}", 0.45f, (t, dur) =>
                 {
-                    float env = Mathf.Exp(-t * 7.5f);
-                    // Rich bell / marimba timbre with harmonic overtones
-                    float s1 = Mathf.Sin(2f * Mathf.PI * root * t);
-                    float s2 = Mathf.Sin(2f * Mathf.PI * fifth * t) * 0.55f;
-                    float s3 = Mathf.Sin(2f * Mathf.PI * octave * t) * 0.35f * Mathf.Exp(-t * 12f);
-                    float s4 = (chordIndex >= 2) ? Mathf.Sin(2f * Mathf.PI * majThird * t) * 0.4f : 0f;
+                    float env = Mathf.Exp(-t * 6.5f);
+                    // Rapid 4-note ascending crystal arpeggio on each hit
+                    float n1 = Mathf.Sin(2f * Mathf.PI * root * t);
+                    float n2 = (t > 0.035f) ? Mathf.Sin(2f * Mathf.PI * third * (t - 0.035f)) * 0.75f : 0f;
+                    float n3 = (t > 0.070f) ? Mathf.Sin(2f * Mathf.PI * fifth * (t - 0.070f)) * 0.65f : 0f;
+                    float n4 = (t > 0.105f) ? Mathf.Sin(2f * Mathf.PI * octave * (t - 0.105f)) * 0.50f : 0f;
+                    float sparkle = Mathf.Sin(2f * Mathf.PI * (octave * 1.5f) * t) * 0.25f * Mathf.Exp(-t * 14f);
 
-                    return (s1 + s2 + s3 + s4) * env * 0.55f;
+                    return (n1 + n2 + n3 + n4 + sparkle) * env * 0.70f;
                 });
             }
 
@@ -260,11 +260,19 @@ namespace PolyFuse.Juice
         {
             if (_audioSource == null || _comboChords == null || _comboChords.Length == 0 || !_soundEnabled) return;
 
-            int index = Mathf.Clamp(comboStreak - 1, 0, _comboChords.Length - 1);
+            int clampedStreak = Mathf.Max(1, comboStreak);
+            int index = Mathf.Clamp(clampedStreak - 1, 0, _comboChords.Length - 1);
             AudioClip clip = _comboChords[index];
 
-            _audioSource.pitch = 1.0f;
-            _audioSource.PlayOneShot(clip, 0.95f);
+            // Pitch escalation: higher combos scale pitch upwards
+            float pitchMult = 1.0f;
+            if (clampedStreak > _comboChords.Length)
+            {
+                pitchMult = Mathf.Pow(1.05946f, clampedStreak - _comboChords.Length);
+            }
+
+            _audioSource.pitch = pitchMult;
+            _audioSource.PlayOneShot(clip, 1.0f);
         }
 
         public void PlayMultiLineClear(int lineCount, int comboStreak)

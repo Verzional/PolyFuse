@@ -50,6 +50,9 @@ namespace PolyFuse.Gameplay
             }
             Instance = this;
 
+            Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;
+
             EnsureComponentsAndSetup();
         }
 
@@ -68,10 +71,15 @@ namespace PolyFuse.Gameplay
                 cam = camObj.AddComponent<Camera>();
                 camObj.tag = "MainCamera";
             }
-            cam.transform.position = new Vector3(0f, -0.75f, -10f);
+            cam.transform.position = new Vector3(0f, -0.95f, -10f);
             cam.orthographic = true;
             cam.orthographicSize = 7.0f;
             cam.backgroundColor = new Color(0.06f, 0.07f, 0.10f, 1.0f);
+
+            if (FindFirstObjectByType<AudioListener>() == null)
+            {
+                cam.gameObject.AddComponent<AudioListener>();
+            }
 
             if (cam.GetComponent<Physics2DRaycaster>() == null)
             {
@@ -216,7 +224,6 @@ namespace PolyFuse.Gameplay
             _board.PlaceShape(piece.Shape, anchor);
             _greedEngine.RecordPiecePlacement(piece.Shape.UnitCount);
             _audio.PlayPieceSnap();
-            HapticFeedbackManager.Instance?.PlayLight();
 
             // 2. Evaluate 3-Axis Line Clears
             StartCoroutine(ProcessClearsAndTurnFlow());
@@ -239,14 +246,15 @@ namespace PolyFuse.Gameplay
                     _juice.TriggerLineClearShake();
                 }
 
+                int activeStreak = _greedEngine.ComboStreak + 1;
                 if (result.TotalLines >= 2)
                 {
-                    _audio.PlayMultiLineClear(result.TotalLines, _greedEngine.ComboStreak);
+                    _audio.PlayMultiLineClear(result.TotalLines, activeStreak);
                     HapticFeedbackManager.Instance?.PlayHeavy();
                 }
                 else
                 {
-                    _audio.PlayLineClear(_greedEngine.ComboStreak);
+                    _audio.PlayLineClear(activeStreak);
                     HapticFeedbackManager.Instance?.PlayMedium();
                 }
 
@@ -337,7 +345,6 @@ namespace PolyFuse.Gameplay
             _inDangerMode = false;
             _audio.PlayHeartbeat(false);
             _audio.PlayGameOver();
-            HapticFeedbackManager.Instance?.PlayHeavy();
             Debug.Log($"[PolyFuse] GAME OVER! Final Score: {_greedEngine.CurrentScore}");
 
             if (_ui != null)
