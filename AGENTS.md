@@ -46,13 +46,15 @@ The board is an isometric canvas composed of interlocking equilateral triangular
 * **Radius:** $R = 3$ (6 rows, $r \in [0, 5]$).
 * **Row Spans:** `halfWidths = [3, 4, 5, 5, 4, 3]` producing smooth, flat hexagonal perimeter boundaries (7, 9, 11, 11, 9, 7 tiles per row; total 54 tiles).
 
-### The 4 Unit Shapes (Macro Pieces)
+### The 6 Polyform Unit Shapes (Macro Pieces)
 
 | Shape Name | Unit Value | Geometric Composition | Strategic Role |
 | --- | --- | --- | --- |
 | **The Shard** | 1 Unit | $1\times$ Single Triangle ($\blacktriangle$ or $\blacktriangledown$) | Precision gap-filler; completes lines and saves runs. |
-| **The Blade** | 2 Units | $2\times$ Triangles sharing a base/edge (Diamond / Rhombus) | Fast diagonal bridging; sets up multi-line intersections. |
+| **The Blade** | 2 Units | $2\times$ Triangles sharing an edge (Diamond / Rhombus) | Fast diagonal bridging; sets up multi-line intersections. |
 | **The Cleaver** | 3 Units | $3\times$ Triangles in a row (Trapezoid strip) | High-volume board filler; requires structural foresight. |
+| **The Chevron** | 4 Units | $4\times$ Triangles forming an angled V/L Boomerang | Bridges 2 isometric axes simultaneously; rapid row completion. |
+| **The Crown** | 5 Units | $5\times$ Triangles forming a Hexagon minus 1 triangle | High surface area; hugs perimeter curves and sets up multi-cleaves. |
 | **The Core** | 6 Units | $6\times$ Triangles forming a regular Hexagon | High risk, massive footprint; strategic macro filler. |
 
 ---
@@ -66,12 +68,18 @@ Board clearing is evaluated across all 3 isometric grid axes:
 
 ---
 
-## 3. Retention Architecture: The Greed Engine & 3-Piece Buffer
+## 3. Retention Architecture: The Greed Engine & Arcade Jackpot Economy
 
-* **3-Turn Combo Grace Buffer:**
-  * Triggering $\ge 1$ line clear increments the combo streak ($1\times \to 2\times \dots$) and resets the grace buffer to **3 turns**.
-  * Placing a piece without a clear decrements the grace buffer ($3 \to 2 \to 1 \to 0$).
-  * The combo streak and score multiplier are preserved during the 3 grace turns; if 3 non-clearing pieces are placed in a row, the streak resets to 0.
+* **Exponential Jackpot Scoring Curve:**
+  * **Piece Placement:** $100 \times \text{UnitCount} \times \max(1, \text{ComboStreak})$.
+  * **1 Line Clear:** $1,000 \times \max(1, \text{ComboStreak})$.
+  * **2 Lines Clear (Double Cleave):** $3,500 \times \max(1, \text{ComboStreak})$.
+  * **3 Lines Clear (The Trifecta):** $10,000 \times \max(1, \text{ComboStreak})$.
+  * **4+ Lines Clear (Super Nova):** $25,000 \times \max(1, \text{ComboStreak})$.
+  * **Board Wipe Jackpot:** $+25,000 \times \max(1, \text{ComboStreak})$ bonus points.
+* **Winner's Curse Solution (Board Wipe Buffer Extension):**
+  * Standard line clears grant a **3-turn grace buffer**.
+  * Achieving a full **Board Wipe** grants an extended **5-turn grace buffer** (`● ● ● ● ●`), providing a spacious runway to place foundational shapes on an empty board and bridge towards the next clear without breaking combo momentum.
 * **Escalating Combo Hype Tiers:**
   * $2\times$: `COMBO ×2!` *(Warm Gold)*
   * $3\times$: `GREAT! ×3` *(Electric Amber)*

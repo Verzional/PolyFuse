@@ -36,6 +36,8 @@ namespace PolyFuse.Core
         Shard,   // 1 Unit
         Blade,   // 2 Units (Diamond)
         Cleaver, // 3 Units (Trapezoid / Strip)
+        Chevron, // 4 Units (L/V Angle / Boomerang)
+        Crown,   // 5 Units (Hexagon with 1 excised)
         Core     // 6 Units (Hexagon)
     }
 }

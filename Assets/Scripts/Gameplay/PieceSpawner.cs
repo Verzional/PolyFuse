@@ -124,7 +124,9 @@ namespace PolyFuse.Gameplay
 
                 if (fillRatio > 0.35f && candidateBatch[0] != null && candidateBatch[1] != null)
                 {
-                    if (candidateBatch[0].category == ShapeCategory.Core && candidateBatch[1].category == ShapeCategory.Core)
+                    bool isFirstHeavy = candidateBatch[0].category == ShapeCategory.Core || candidateBatch[0].category == ShapeCategory.Crown;
+                    bool isSecondHeavy = candidateBatch[1].category == ShapeCategory.Core || candidateBatch[1].category == ShapeCategory.Crown;
+                    if (isFirstHeavy && isSecondHeavy)
                     {
                         candidateBatch[1] = ShapeCatalog.Blades[Random.Range(0, ShapeCatalog.Blades.Count)];
                     }
@@ -224,7 +226,7 @@ namespace PolyFuse.Gameplay
                     }
                 }
 
-                if (emptyCoords.Count > 0 && emptyCoords.Count <= 3 && emptyCoords.Count < minMissing)
+                if (emptyCoords.Count > 0 && emptyCoords.Count <= 4 && emptyCoords.Count < minMissing)
                 {
                     minMissing = emptyCoords.Count;
                     bestMissing = emptyCoords;
@@ -267,6 +269,21 @@ namespace PolyFuse.Gameplay
                     if (board.CanPlace(cleaver, bestMissing[0]))
                     {
                         return cleaver;
+                    }
+                }
+            }
+
+            // 4 Missing -> Check Chevrons
+            if (bestMissing.Count == 4)
+            {
+                List<ShapeDefinition> chevrons = new List<ShapeDefinition>(ShapeCatalog.Chevrons);
+                ShuffleList(chevrons);
+
+                foreach (var chevron in chevrons)
+                {
+                    if (board.CanPlace(chevron, bestMissing[0]))
+                    {
+                        return chevron;
                     }
                 }
             }
