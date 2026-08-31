@@ -85,6 +85,7 @@ namespace PolyFuse.Grid
             }
 
             Debug.Log($"[HexBoard] Symmetrical Hexagon Board generated with Radius {_radius} ({_tiles.Count} tiles).");
+            PolyFuse.Juice.BoardAuraController.Instance?.RebuildAuraGeometry();
         }
 
         private void CreateTile(GridCoord coord)

@@ -163,6 +163,17 @@ namespace PolyFuse.Gameplay
             {
                 gameObject.AddComponent<HapticFeedbackManager>();
             }
+            if (FindFirstObjectByType<BoardAuraController>() == null)
+            {
+                if (_board != null)
+                {
+                    _board.gameObject.AddComponent<BoardAuraController>();
+                }
+                else
+                {
+                    gameObject.AddComponent<BoardAuraController>();
+                }
+            }
 
             // UI
             if (_ui == null)
@@ -189,6 +200,7 @@ namespace PolyFuse.Gameplay
             _greedEngine.OnComboChanged += (combo, grace, pitch) =>
             {
                 if (_ui != null) _ui.UpdateComboState(combo, grace, pitch);
+                BoardAuraController.Instance?.SetComboState(combo);
             };
 
             _greedEngine.OnNewHighScoreAchieved += (newScore) =>
@@ -206,6 +218,7 @@ namespace PolyFuse.Gameplay
             _audio.PlayHeartbeat(false);
             _board.ResetBoard();
             _greedEngine.ResetGame();
+            BoardAuraController.Instance?.SetComboState(0);
 
             if (_ui != null)
             {
@@ -247,6 +260,8 @@ namespace PolyFuse.Gameplay
                 }
 
                 int activeStreak = _greedEngine.ComboStreak + 1;
+                BoardAuraController.Instance?.TriggerClearSurge(activeStreak);
+
                 if (result.TotalLines >= 2)
                 {
                     _audio.PlayMultiLineClear(result.TotalLines, activeStreak);
