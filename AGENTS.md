@@ -46,7 +46,7 @@ The board is an isometric canvas composed of interlocking equilateral triangular
 * **Radius:** $R = 3$ (6 rows, $r \in [0, 5]$).
 * **Row Spans:** `halfWidths = [3, 4, 5, 5, 4, 3]` producing smooth, flat hexagonal perimeter boundaries (7, 9, 11, 11, 9, 7 tiles per row; total 54 tiles).
 
-### The 6 Polyform Unit Shapes (Macro Pieces)
+### The 9 Polyform Unit Shapes (Macro Pieces)
 
 | Shape Name | Unit Value | Geometric Composition | Strategic Role |
 | --- | --- | --- | --- |
@@ -54,6 +54,9 @@ The board is an isometric canvas composed of interlocking equilateral triangular
 | **The Blade** | 2 Units | $2\times$ Triangles sharing an edge (Diamond / Rhombus) | Fast diagonal bridging; sets up multi-line intersections. |
 | **The Cleaver** | 3 Units | $3\times$ Triangles in a row (Trapezoid strip) | High-volume board filler; requires structural foresight. |
 | **The Chevron** | 4 Units | $4\times$ Triangles forming an angled V/L Boomerang | Bridges 2 isometric axes simultaneously; rapid row completion. |
+| **The Grand Cleaver** | 4 Units | $4\times$ Triangles in a continuous linear strip | Powerful straight-line coverage; fills $>50\%$ of an entire row. |
+| **The Delta** | 4 Units | $4\times$ Triangles forming a $2\times 2$ Equilateral Triangle | Dense 2D corner reinforcement; anchors central clusters. |
+| **The Trifork** | 4 Units | $4\times$ Triangles forming a 3-way Y-Star Propeller | Instant 3-axis trigger radiating from a central vertex. |
 | **The Crown** | 5 Units | $5\times$ Triangles forming a Hexagon minus 1 triangle | High surface area; hugs perimeter curves and sets up multi-cleaves. |
 | **The Core** | 6 Units | $6\times$ Triangles forming a regular Hexagon | High risk, massive footprint; strategic macro filler. |
 
@@ -77,9 +80,9 @@ Board clearing is evaluated across all 3 isometric grid axes:
   * **3 Lines Clear (The Trifecta):** $10,000 \times \max(1, \text{ComboStreak})$.
   * **4+ Lines Clear (Super Nova):** $25,000 \times \max(1, \text{ComboStreak})$.
   * **Board Wipe Jackpot:** $+25,000 \times \max(1, \text{ComboStreak})$ bonus points.
-* **Winner's Curse Solution (Board Wipe Buffer Extension):**
-  * Standard line clears grant a **3-turn grace buffer**.
-  * Achieving a full **Board Wipe** grants an extended **5-turn grace buffer** (`● ● ● ● ●`), providing a spacious runway to place foundational shapes on an empty board and bridge towards the next clear without breaking combo momentum.
+* **Multi-Line Cleave & Winner's Curse Grace Buffer:**
+  * Standard 1-line clears grant a **3-turn grace buffer** (`● ● ● ○ ○`).
+  * Achieving a **Multi-Line Clear** ($\ge 2$ lines: Double Cleave, Trifecta, Super Nova) or a full **Board Wipe** grants an extended **5-turn grace buffer** (`● ● ● ● ●`), rewarding strategic setups with a spacious runway to place pieces and bridge toward the next clear without breaking combo momentum.
 * **Escalating Combo Hype Tiers:**
   * $2\times$: `COMBO ×2!` *(Warm Gold)*
   * $3\times$: `GREAT! ×3` *(Electric Amber)*
