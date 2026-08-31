@@ -273,17 +273,18 @@ namespace PolyFuse.Gameplay
                 }
             }
 
-            // 4 Missing -> Check Chevrons
+            // 4 Missing -> Check Grand Cleavers and Chevrons
             if (bestMissing.Count == 4)
             {
-                List<ShapeDefinition> chevrons = new List<ShapeDefinition>(ShapeCatalog.Chevrons);
-                ShuffleList(chevrons);
+                List<ShapeDefinition> fours = new List<ShapeDefinition>(ShapeCatalog.GrandCleavers);
+                fours.AddRange(ShapeCatalog.Chevrons);
+                ShuffleList(fours);
 
-                foreach (var chevron in chevrons)
+                foreach (var fourPiece in fours)
                 {
-                    if (board.CanPlace(chevron, bestMissing[0]))
+                    if (board.CanPlace(fourPiece, bestMissing[0]))
                     {
-                        return chevron;
+                        return fourPiece;
                     }
                 }
             }

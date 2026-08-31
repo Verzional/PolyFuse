@@ -33,11 +33,14 @@ namespace PolyFuse.Core
 
     public enum ShapeCategory
     {
-        Shard,   // 1 Unit
-        Blade,   // 2 Units (Diamond)
-        Cleaver, // 3 Units (Trapezoid / Strip)
-        Chevron, // 4 Units (L/V Angle / Boomerang)
-        Crown,   // 5 Units (Hexagon with 1 excised)
-        Core     // 6 Units (Hexagon)
+        Shard,        // 1 Unit (Single triangle)
+        Blade,        // 2 Units (Diamond / Rhombus)
+        Cleaver,      // 3 Units (Trapezoid / 3-strip)
+        Chevron,      // 4 Units (Angled V/L Boomerang)
+        GrandCleaver, // 4 Units (Linear 4-strip)
+        Delta,        // 4 Units (2x2 Super Triangle)
+        Trifork,      // 4 Units (Y-Star Propeller)
+        Crown,        // 5 Units (Hexagon with 1 excised)
+        Core          // 6 Units (Hexagon)
     }
 }
