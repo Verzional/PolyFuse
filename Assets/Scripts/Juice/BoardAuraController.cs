@@ -133,48 +133,48 @@ namespace PolyFuse.Juice
                     _targetColor = new Color(0.18f, 0.28f, 0.44f, 0.40f); // Sleek titanium slate idle
                     _pulseSpeed = 0.75f;
                     _pulseIntensity = 0.08f;
-                    targetBg = new Color(0.06f, 0.07f, 0.10f, 1.0f);
+                    targetBg = new Color(0.040f, 0.052f, 0.075f, 1.0f); // Soft Midnight Slate
                     break;
                 case 1:
                     _targetColor = new Color(0.15f, 0.85f, 1.00f, 0.85f); // Vibrant Sky Cyan
                     _pulseSpeed = 1.2f;
                     _pulseIntensity = 0.12f;
-                    targetBg = new Color(0.05f, 0.08f, 0.12f, 1.0f);
+                    targetBg = new Color(0.035f, 0.075f, 0.110f, 1.0f); // Soft Oceanic Tint
                     break;
                 case 2:
                     _targetColor = new Color(1.00f, 0.82f, 0.15f, 0.90f); // Warm Amber Gold
                     _pulseSpeed = 1.8f;
                     _pulseIntensity = 0.15f;
-                    targetBg = new Color(0.08f, 0.07f, 0.09f, 1.0f);
+                    targetBg = new Color(0.078f, 0.062f, 0.035f, 1.0f); // Soft Warm Gold Tint
                     break;
                 case 3:
                     _targetColor = new Color(1.00f, 0.55f, 0.10f, 0.95f); // Electric Orange
                     _pulseSpeed = 2.4f;
                     _pulseIntensity = 0.18f;
-                    targetBg = new Color(0.09f, 0.06f, 0.09f, 1.0f);
+                    targetBg = new Color(0.090f, 0.052f, 0.032f, 1.0f); // Soft Amber Noir Tint
                     break;
                 case 4:
                     _targetColor = new Color(1.00f, 0.25f, 0.48f, 1.0f); // Neon Coral/Rose
                     _pulseSpeed = 3.0f;
                     _pulseIntensity = 0.20f;
-                    targetBg = new Color(0.10f, 0.05f, 0.09f, 1.0f);
+                    targetBg = new Color(0.090f, 0.036f, 0.068f, 1.0f); // Soft Rose Noir Tint
                     break;
                 case 5:
                     _targetColor = new Color(0.92f, 0.20f, 1.00f, 1.0f); // Electric Magenta
                     _pulseSpeed = 3.8f;
                     _pulseIntensity = 0.22f;
-                    targetBg = new Color(0.09f, 0.05f, 0.12f, 1.0f);
+                    targetBg = new Color(0.082f, 0.032f, 0.098f, 1.0f); // Soft Velvet Violet Tint
                     break;
                 case 6:
                     _targetColor = new Color(0.10f, 1.00f, 0.92f, 1.0f); // Hyper Cyan Supernova
                     _pulseSpeed = 4.8f;
                     _pulseIntensity = 0.25f;
-                    targetBg = new Color(0.04f, 0.10f, 0.13f, 1.0f);
+                    targetBg = new Color(0.024f, 0.082f, 0.102f, 1.0f); // Soft Teal Cyan Tint
                     break;
                 default: // 7+ POLYFUSE GOD
                     _pulseSpeed = 6.0f;
                     _pulseIntensity = 0.28f;
-                    targetBg = new Color(0.10f, 0.06f, 0.14f, 1.0f);
+                    targetBg = new Color(0.078f, 0.032f, 0.110f, 1.0f); // Soft Cosmic Obsidian Tint
                     break;
             }
 
@@ -221,6 +221,7 @@ namespace PolyFuse.Juice
 
         private IEnumerator TransitionCameraBackground(Color targetBg)
         {
+            if (_mainCamera == null) _mainCamera = Camera.main;
             if (_mainCamera == null) yield break;
 
             Color fromBg = _mainCamera.backgroundColor;
