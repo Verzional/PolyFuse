@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using PolyFuse.Core;
 using PolyFuse.Gameplay;
@@ -57,20 +58,20 @@ namespace PolyFuse.Interaction
             {
                 if (batch[i] != null)
                 {
-                    SpawnPieceInSlot(batch[i], i);
+                    SpawnPieceInSlot(batch[i], i, i * 0.06f);
                 }
             }
 
             UpdatePiecePlayability();
         }
 
-        private void SpawnPieceInSlot(ShapeDefinition shape, int slotIndex)
+        private void SpawnPieceInSlot(ShapeDefinition shape, int slotIndex, float dealDelay)
         {
             GameObject pieceObj = new GameObject($"Piece_Slot_{slotIndex}_{shape.id}");
             pieceObj.transform.SetParent(transform, false);
 
             DraggablePiece piece = pieceObj.AddComponent<DraggablePiece>();
-            piece.Initialize(shape, slotIndex, _slotPositions[slotIndex], _board);
+            piece.Initialize(shape, slotIndex, _slotPositions[slotIndex], _board, dealDelay);
             piece.OnPiecePlaced += HandlePiecePlaced;
 
             _activePieces[slotIndex] = piece;

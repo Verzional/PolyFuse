@@ -144,7 +144,6 @@ namespace PolyFuse.Gameplay
             }
             _trayManager.Initialize(_board, _spawner);
             _trayManager.OnPiecePlaced += HandlePiecePlaced;
-            _trayManager.OnHandDepleted += HandleHandDepleted;
 
             // Juice & Audio & Particles & Haptics
             if (_juice == null)
@@ -174,6 +173,10 @@ namespace PolyFuse.Gameplay
                     gameObject.AddComponent<BoardAuraController>();
                 }
             }
+            if (FindFirstObjectByType<WorldSpacePopupManager>() == null)
+            {
+                gameObject.AddComponent<WorldSpacePopupManager>();
+            }
 
             // UI
             if (_ui == null)
@@ -194,20 +197,26 @@ namespace PolyFuse.Gameplay
             // Event bindings
             _greedEngine.OnScoreChanged += (score, delta) =>
             {
-                if (_ui != null) _ui.UpdateScore(score, _greedEngine.HighScore, delta);
+                _ui?.UpdateScore(score, _greedEngine.HighScore, delta);
             };
 
-            _greedEngine.OnComboChanged += (combo, grace, pitch) =>
+            _greedEngine.OnComboChanged += (streak, grace, pitch) =>
             {
-                if (_ui != null) _ui.UpdateComboState(combo, grace, pitch);
-                BoardAuraController.Instance?.SetComboState(combo);
+                _ui?.UpdateComboState(streak, grace, pitch);
+                BoardAuraController.Instance?.SetComboState(streak);
             };
 
-            _greedEngine.OnNewHighScoreAchieved += (newScore) =>
+            _greedEngine.OnNewHighScoreAchieved += (highScore) =>
             {
+                _ui?.ShowNewHighScoreBanner(highScore);
                 _audio.PlayNewBestFanfare();
-                if (_ui != null) _ui.ShowNewHighScoreBanner(newScore);
-                ProceduralParticleManager.Instance?.SpawnGoldenStarburst(new Vector3(0f, 1.5f, 0f));
+                ProceduralParticleManager.Instance?.SpawnGoldenStarburst(Vector3.up * 1.5f);
+            };
+
+            _greedEngine.OnBoardWipe += (bonus) =>
+            {
+                _ui?.ShowBoardWipeBanner(bonus);
+                ProceduralParticleManager.Instance?.SpawnConfettiBurst(Vector3.zero);
             };
         }
 
@@ -273,6 +282,20 @@ namespace PolyFuse.Gameplay
                     HapticFeedbackManager.Instance?.PlayMedium();
                 }
 
+                // Compute geometric center of cleared tiles for world-space popup
+                Vector3 clearCenterPos = Vector3.zero;
+                int tileCount = 0;
+                foreach (var coord in result.tilesToClear)
+                {
+                    TriangleTile tile = _board.GetTile(coord);
+                    if (tile != null)
+                    {
+                        clearCenterPos += tile.transform.position;
+                        tileCount++;
+                    }
+                }
+                if (tileCount > 0) clearCenterPos /= tileCount;
+
                 // Trigger clear animation and particles on tiles
                 foreach (var coord in result.tilesToClear)
                 {
@@ -302,7 +325,8 @@ namespace PolyFuse.Gameplay
                     HapticFeedbackManager.Instance?.PlayHeavy();
                 }
 
-                _greedEngine.ProcessTurnClears(result, isWipe);
+                int pointsGained = _greedEngine.ProcessTurnClears(result, isWipe);
+                WorldSpacePopupManager.Instance?.SpawnCleavePopup(clearCenterPos, result.TotalLines, pointsGained, activeStreak, isWipe);
             }
             else
             {
@@ -339,18 +363,6 @@ namespace PolyFuse.Gameplay
             if (!_trayManager.HasAnyPlayablePiece())
             {
                 TriggerGameOver();
-            }
-        }
-
-        private void HandleHandDepleted()
-        {
-            if (!_isGameOver)
-            {
-                _trayManager.DealNewHand();
-                if (!_trayManager.HasAnyPlayablePiece())
-                {
-                    TriggerGameOver();
-                }
             }
         }
 

@@ -35,7 +35,7 @@ namespace PolyFuse.Interaction
 
         public event Action<DraggablePiece, GridCoord> OnPiecePlaced;
 
-        public void Initialize(ShapeDefinition shape, int slotIndex, Vector3 slotRestPos, HexBoard board)
+        public void Initialize(ShapeDefinition shape, int slotIndex, Vector3 slotRestPos, HexBoard board, float dealDelay = 0f)
         {
             _shape = shape;
             _slotIndex = slotIndex;
@@ -44,10 +44,59 @@ namespace PolyFuse.Interaction
             _mainCamera = Camera.main;
             _cachedCentroid = CalculateShapeCentroid();
 
-            transform.position = slotRestPos;
-            transform.localScale = Vector3.one * _trayScale;
-
             BuildVisuals();
+            StartCoroutine(AnimateDealDrop(dealDelay));
+        }
+
+        private IEnumerator AnimateDealDrop(float dealDelay)
+        {
+            Vector3 startPos = _slotRestPosition + Vector3.up * 0.40f;
+            Vector3 targetPos = _slotRestPosition;
+            Vector3 startScale = Vector3.one * (_trayScale * 0.20f);
+            Vector3 peakScale = Vector3.one * (_trayScale * 1.15f);
+            Vector3 finalScale = Vector3.one * _trayScale;
+
+            transform.position = startPos;
+            transform.localScale = (dealDelay > 0f) ? Vector3.zero : startScale;
+
+            if (dealDelay > 0f)
+            {
+                yield return new WaitForSeconds(dealDelay);
+                transform.localScale = startScale;
+            }
+
+            float dur = 0.22f;
+            float elapsed = 0f;
+
+            while (elapsed < dur)
+            {
+                if (_isDragging) yield break;
+
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+
+                float posT = Mathf.Sin(t * Mathf.PI * 0.5f);
+                transform.position = Vector3.Lerp(startPos, targetPos, posT);
+
+                if (t < 0.65f)
+                {
+                    float scaleT = t / 0.65f;
+                    transform.localScale = Vector3.Lerp(startScale, peakScale, scaleT);
+                }
+                else
+                {
+                    float scaleT = (t - 0.65f) / 0.35f;
+                    transform.localScale = Vector3.Lerp(peakScale, finalScale, scaleT);
+                }
+
+                yield return null;
+            }
+
+            if (!_isDragging)
+            {
+                transform.position = targetPos;
+                transform.localScale = finalScale;
+            }
         }
 
         private void BuildVisuals()
