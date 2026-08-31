@@ -14,8 +14,8 @@ namespace PolyFuse.Gameplay
         [SerializeField] private int _boardWipeBonus = 25000;
 
         [Header("Combo Tuning")]
-        [SerializeField] private int _comboGraceTurns = 3; // Standard combo grace buffer (3 pieces)
-        [SerializeField] private int _boardWipeGraceTurns = 5; // Extended grace buffer on full board wipe (Solve Winner's Curse)
+        [SerializeField] private int _comboGraceTurns = 3; // Standard single-line combo grace buffer (3 pieces)
+        [SerializeField] private int _multiLineGraceTurns = 5; // Extended grace buffer on multi-line clears (>= 2 lines) or board wipe
 
         [Header("Live State")]
         [SerializeField] private int _currentScore;
@@ -32,7 +32,8 @@ namespace PolyFuse.Gameplay
         public int ComboStreak => _comboStreak;
         public int GraceRemaining => _graceRemaining;
         public int MaxGraceTurns => _comboGraceTurns;
-        public int BoardWipeGraceTurns => _boardWipeGraceTurns;
+        public int MultiLineGraceTurns => _multiLineGraceTurns;
+        public int BoardWipeGraceTurns => _multiLineGraceTurns;
         public float AudioPitchMultiplier => 1.0f + (_comboStreak * 0.12f);
         public int Multiplier => Mathf.Max(1, _comboStreak);
 
@@ -75,10 +76,10 @@ namespace PolyFuse.Gameplay
                 _comboStreak++;
                 int mult = Mathf.Max(1, _comboStreak);
 
-                // Set grace buffer: board wipe gets extended grace buffer (5 turns) to solve Winner's Curse
-                if (isBoardCompletelyEmpty)
+                // Multi-line clears (>= 2 lines) or Board Wipe gets extended grace buffer (5 turns)
+                if (clearResult.TotalLines >= 2 || isBoardCompletelyEmpty)
                 {
-                    _graceRemaining = _boardWipeGraceTurns;
+                    _graceRemaining = _multiLineGraceTurns;
                 }
                 else
                 {

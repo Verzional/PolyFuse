@@ -254,14 +254,15 @@ namespace PolyFuse.UI
             _highScoreText = highScoreObj.AddComponent<Text>();
             _highScoreText.font = font;
             _highScoreText.raycastTarget = false;
-            _highScoreText.text = "BEST  0";
-            _highScoreText.fontSize = 28;
+            _highScoreText.text = "★ BEST  0 ★";
+            _highScoreText.fontSize = 32;
             _highScoreText.fontStyle = FontStyle.Bold;
             _highScoreText.alignment = TextAnchor.MiddleCenter;
-            _highScoreText.color = new Color(0.65f, 0.78f, 0.95f, 1.0f);
-            AddShadow(highScoreObj, new Color(0f, 0f, 0f, 0.6f), new Vector2(1.5f, -1.5f));
+            _highScoreText.color = new Color(1.0f, 0.88f, 0.45f, 1.0f);
+            AddOutline(highScoreObj, new Color(0.08f, 0.05f, 0.01f, 0.9f), new Vector2(2f, -2f));
+            AddShadow(highScoreObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(2f, -2f));
             RectTransform hsRt = highScoreObj.GetComponent<RectTransform>();
-            hsRt.anchorMin = new Vector2(0f, 0.72f);
+            hsRt.anchorMin = new Vector2(0f, 0.70f);
             hsRt.anchorMax = new Vector2(1f, 1.0f);
             hsRt.sizeDelta = Vector2.zero;
 
@@ -272,14 +273,14 @@ namespace PolyFuse.UI
             _scoreText.font = font;
             _scoreText.raycastTarget = false;
             _scoreText.text = "0";
-            _scoreText.fontSize = 76;
+            _scoreText.fontSize = 78;
             _scoreText.fontStyle = FontStyle.Bold;
             _scoreText.alignment = TextAnchor.MiddleCenter;
             _scoreText.color = Color.white;
             AddOutline(scoreObj, new Color(0.05f, 0.08f, 0.14f, 0.8f), new Vector2(2f, -2f));
             RectTransform scoreRt = scoreObj.GetComponent<RectTransform>();
             scoreRt.anchorMin = new Vector2(0f, 0.0f);
-            scoreRt.anchorMax = new Vector2(1f, 0.72f);
+            scoreRt.anchorMax = new Vector2(1f, 0.70f);
             scoreRt.sizeDelta = Vector2.zero;
 
             // Score Delta Popup (Floating +300)
@@ -289,7 +290,7 @@ namespace PolyFuse.UI
             _scoreDeltaPopup.font = font;
             _scoreDeltaPopup.raycastTarget = false;
             _scoreDeltaPopup.text = "+150";
-            _scoreDeltaPopup.fontSize = 40;
+            _scoreDeltaPopup.fontSize = 42;
             _scoreDeltaPopup.fontStyle = FontStyle.Bold;
             _scoreDeltaPopup.alignment = TextAnchor.MiddleCenter;
             _scoreDeltaPopup.color = new Color(0.20f, 0.90f, 1.0f, 1f);
@@ -309,7 +310,7 @@ namespace PolyFuse.UI
             _comboRt.anchorMin = new Vector2(0.5f, 1f);
             _comboRt.anchorMax = new Vector2(0.5f, 1f);
             _comboRt.pivot = new Vector2(0.5f, 1f);
-            _comboRt.sizeDelta = new Vector2(500f, 80f);
+            _comboRt.sizeDelta = new Vector2(560f, 96f);
             _comboRt.anchoredPosition = new Vector2(0f, -200f);
             _comboCanvasGroup = comboObj.AddComponent<CanvasGroup>();
             _comboCanvasGroup.blocksRaycasts = false;
@@ -322,29 +323,30 @@ namespace PolyFuse.UI
             _comboText.font = font;
             _comboText.raycastTarget = false;
             _comboText.text = "COMBO ×2!";
-            _comboText.fontSize = 38;
+            _comboText.fontSize = 44;
             _comboText.fontStyle = FontStyle.Bold;
             _comboText.alignment = TextAnchor.MiddleCenter;
             _comboText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
-            AddOutline(comboLabelObj, new Color(0.12f, 0.08f, 0.02f, 0.9f), new Vector2(2f, -2f));
+            AddOutline(comboLabelObj, new Color(0.12f, 0.08f, 0.02f, 0.9f), new Vector2(2.5f, -2.5f));
             RectTransform clRt = comboLabelObj.GetComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0f, 0.35f);
+            clRt.anchorMin = new Vector2(0f, 0.42f);
             clRt.anchorMax = new Vector2(1f, 1f);
             clRt.sizeDelta = Vector2.zero;
 
-            // Combo Pips (● ● ●)
+            // Combo Pips (●  ●  ●  ○  ○)
             GameObject pipsObj = new GameObject("ComboPips");
             pipsObj.transform.SetParent(comboObj.transform, false);
             _comboPipsText = pipsObj.AddComponent<Text>();
             _comboPipsText.font = font;
+            _comboPipsText.supportRichText = true;
             _comboPipsText.raycastTarget = false;
-            _comboPipsText.fontSize = 22;
+            _comboPipsText.fontSize = 36;
             _comboPipsText.alignment = TextAnchor.MiddleCenter;
-            _comboPipsText.color = new Color(1.0f, 0.90f, 0.45f, 0.95f);
-            AddShadow(pipsObj, new Color(0f, 0f, 0f, 0.6f), new Vector2(1.5f, -1.5f));
+            _comboPipsText.color = Color.white;
+            AddShadow(pipsObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(2f, -2f));
             RectTransform pRt = pipsObj.GetComponent<RectTransform>();
             pRt.anchorMin = new Vector2(0f, 0f);
-            pRt.anchorMax = new Vector2(1f, 0.4f);
+            pRt.anchorMax = new Vector2(1f, 0.45f);
             pRt.sizeDelta = Vector2.zero;
 
             // 3. Game Over Panel
@@ -524,7 +526,7 @@ namespace PolyFuse.UI
 
             if (_highScoreText != null)
             {
-                _highScoreText.text = $"BEST  {highScore:N0}";
+                _highScoreText.text = $"★ BEST  {highScore:N0} ★";
             }
         }
 
@@ -569,21 +571,26 @@ namespace PolyFuse.UI
             if (_comboPipsText != null)
             {
                 int totalPips = Mathf.Max(3, _maxGraceInStreak);
-                string pips = "";
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 for (int i = 0; i < totalPips; i++)
                 {
-                    pips += (i < graceRemaining) ? "● " : "○ ";
+                    if (i < graceRemaining)
+                    {
+                        if (graceRemaining <= 1)
+                        {
+                            sb.Append("<color=#FF3366>●</color>  "); // Urgent pulse red
+                        }
+                        else
+                        {
+                            sb.Append("<color=#FFD54F>●</color>  "); // Bright warm amber gold
+                        }
+                    }
+                    else
+                    {
+                        sb.Append("<color=#475569>○</color>  "); // Distinct slate outline circle
+                    }
                 }
-                _comboPipsText.text = pips.TrimEnd();
-
-                if (graceRemaining <= 1)
-                {
-                    _comboPipsText.color = new Color(0.96f, 0.35f, 0.42f, 1f); // Warning red on 1 piece left
-                }
-                else
-                {
-                    _comboPipsText.color = new Color(1.0f, 0.88f, 0.40f, 0.95f);
-                }
+                _comboPipsText.text = sb.ToString().TrimEnd();
             }
 
             if (_comboAnimCoroutine != null) StopCoroutine(_comboAnimCoroutine);
