@@ -33,7 +33,8 @@ namespace PolyFuse.UI
         private Coroutine _comboAnimCoroutine;
         private Coroutine _celebrationCoroutine;
 
-        private RectTransform _headerRt;
+        private RectTransform _highScoreRt;
+        private RectTransform _scoreRt;
         private RectTransform _settingsBtnRt;
         private RectTransform _comboRt;
         private RectTransform _popupRt;
@@ -67,21 +68,19 @@ namespace PolyFuse.UI
                 _scoreDeltaPopup.gameObject.SetActive(false);
             }
 
-            ApplySafeAreaInsets();
+            ApplySafeArea(Screen.safeArea);
         }
 
         private void Update()
         {
             if (Screen.safeArea != _lastSafeArea)
             {
-                ApplySafeAreaInsets();
+                ApplySafeArea(Screen.safeArea);
             }
         }
 
-        private void ApplySafeAreaInsets()
+        private void ApplySafeArea(Rect safe)
         {
-            Rect safe = Screen.safeArea;
-            if (safe == _lastSafeArea && _headerRt != null && _headerRt.anchoredPosition.y < 0) return;
             _lastSafeArea = safe;
 
             float screenH = Screen.height;
@@ -95,25 +94,29 @@ namespace PolyFuse.UI
             // Safe top margin (Dynamic Island is ~59pt which scales to ~140px on canvas)
             float safeTopY = -Mathf.Max(25f, topInsetCanvas + 12f);
 
-            if (_headerRt != null)
+            if (_highScoreRt != null)
             {
-                _headerRt.anchoredPosition = new Vector2(0f, safeTopY);
+                _highScoreRt.anchoredPosition = new Vector2(36f, safeTopY - 14f);
             }
             if (_settingsBtnRt != null)
             {
-                _settingsBtnRt.anchoredPosition = new Vector2(-30f, safeTopY - 5f);
+                _settingsBtnRt.anchoredPosition = new Vector2(-36f, safeTopY - 14f);
+            }
+            if (_scoreRt != null)
+            {
+                _scoreRt.anchoredPosition = new Vector2(0f, safeTopY - 10f);
             }
             if (_comboRt != null)
             {
-                _comboRt.anchoredPosition = new Vector2(0f, safeTopY - 175f);
+                _comboRt.anchoredPosition = new Vector2(0f, safeTopY - 100f);
             }
             if (_popupRt != null)
             {
-                _popupRt.anchoredPosition = new Vector2(0f, safeTopY - 90f);
+                _popupRt.anchoredPosition = new Vector2(0f, safeTopY - 55f);
             }
             if (_celebrationRt != null)
             {
-                _celebrationRt.anchoredPosition = new Vector2(0f, safeTopY - 260f);
+                _celebrationRt.anchoredPosition = new Vector2(0f, safeTopY - 170f);
             }
         }
 
@@ -121,13 +124,14 @@ namespace PolyFuse.UI
         {
             if (_uiFont != null) return _uiFont;
 
-            // Load native Unity fonts
-            _uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (_uiFont == null) _uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            // 1. Load bespoke bundled game font
+            _uiFont = Resources.Load<Font>("PolyFuse-MainFont");
+            if (_uiFont == null) _uiFont = Resources.Load<Font>("Fonts/PolyFuse-MainFont");
 
+            // 2. OS Dynamic font lookups
             if (_uiFont == null)
             {
-                string[] fontNames = new[] { "Arial", "Helvetica", "San Francisco", "Roboto", "Verdana" };
+                string[] fontNames = new[] { "DIN Alternate", "DIN Alternate Bold", "Futura-Bold", "Futura", "Trebuchet MS", "Helvetica Neue", "Arial" };
                 foreach (var fname in fontNames)
                 {
                     try
@@ -138,6 +142,10 @@ namespace PolyFuse.UI
                     catch { }
                 }
             }
+
+            // 3. Unity built-in fallback
+            if (_uiFont == null) _uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (_uiFont == null) _uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             return _uiFont;
         }
@@ -238,50 +246,47 @@ namespace PolyFuse.UI
 
             Font font = GetSystemFont();
 
-            // 1. Header Panel (Top Center)
-            GameObject headerObj = new GameObject("HeaderPanel");
-            headerObj.transform.SetParent(canvas.transform, false);
-            _headerRt = headerObj.AddComponent<RectTransform>();
-            _headerRt.anchorMin = new Vector2(0f, 1f);
-            _headerRt.anchorMax = new Vector2(1f, 1f);
-            _headerRt.pivot = new Vector2(0.5f, 1f);
-            _headerRt.sizeDelta = new Vector2(0f, 165f);
-            _headerRt.anchoredPosition = new Vector2(0f, -25f);
-
-            // High Score Text (At very top)
+            // 1. High Score Text (Top-Left)
             GameObject highScoreObj = new GameObject("HighScoreText");
-            highScoreObj.transform.SetParent(_headerRt, false);
+            highScoreObj.transform.SetParent(canvas.transform, false);
             _highScoreText = highScoreObj.AddComponent<Text>();
             _highScoreText.font = font;
             _highScoreText.raycastTarget = false;
-            _highScoreText.text = "★ BEST  0 ★";
-            _highScoreText.fontSize = 32;
+            _highScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _highScoreText.verticalOverflow = VerticalWrapMode.Overflow;
+            _highScoreText.text = "★ 0";
+            _highScoreText.fontSize = 28;
             _highScoreText.fontStyle = FontStyle.Bold;
-            _highScoreText.alignment = TextAnchor.MiddleCenter;
-            _highScoreText.color = new Color(1.0f, 0.88f, 0.45f, 1.0f);
-            AddOutline(highScoreObj, new Color(0.08f, 0.05f, 0.01f, 0.9f), new Vector2(2f, -2f));
-            AddShadow(highScoreObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(2f, -2f));
-            RectTransform hsRt = highScoreObj.GetComponent<RectTransform>();
-            hsRt.anchorMin = new Vector2(0f, 0.70f);
-            hsRt.anchorMax = new Vector2(1f, 1.0f);
-            hsRt.sizeDelta = Vector2.zero;
+            _highScoreText.alignment = TextAnchor.MiddleLeft;
+            _highScoreText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
+            AddShadow(highScoreObj, new Color(0f, 0f, 0f, 0.7f), new Vector2(2f, -2f));
+            _highScoreRt = highScoreObj.GetComponent<RectTransform>();
+            _highScoreRt.anchorMin = new Vector2(0f, 1f);
+            _highScoreRt.anchorMax = new Vector2(0f, 1f);
+            _highScoreRt.pivot = new Vector2(0f, 1f);
+            _highScoreRt.sizeDelta = new Vector2(300f, 50f);
+            _highScoreRt.anchoredPosition = new Vector2(36f, -32f);
 
-            // Score Text (Large bold number)
+            // 2. Current Score (Top-Mid Center)
             GameObject scoreObj = new GameObject("ScoreText");
-            scoreObj.transform.SetParent(_headerRt, false);
+            scoreObj.transform.SetParent(canvas.transform, false);
             _scoreText = scoreObj.AddComponent<Text>();
             _scoreText.font = font;
             _scoreText.raycastTarget = false;
+            _scoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _scoreText.verticalOverflow = VerticalWrapMode.Overflow;
             _scoreText.text = "0";
-            _scoreText.fontSize = 78;
+            _scoreText.fontSize = 76;
             _scoreText.fontStyle = FontStyle.Bold;
             _scoreText.alignment = TextAnchor.MiddleCenter;
             _scoreText.color = Color.white;
-            AddOutline(scoreObj, new Color(0.05f, 0.08f, 0.14f, 0.8f), new Vector2(2f, -2f));
-            RectTransform scoreRt = scoreObj.GetComponent<RectTransform>();
-            scoreRt.anchorMin = new Vector2(0f, 0.0f);
-            scoreRt.anchorMax = new Vector2(1f, 0.70f);
-            scoreRt.sizeDelta = Vector2.zero;
+            AddOutline(scoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2f, -2f));
+            _scoreRt = scoreObj.GetComponent<RectTransform>();
+            _scoreRt.anchorMin = new Vector2(0.5f, 1f);
+            _scoreRt.anchorMax = new Vector2(0.5f, 1f);
+            _scoreRt.pivot = new Vector2(0.5f, 1f);
+            _scoreRt.sizeDelta = new Vector2(360f, 85f);
+            _scoreRt.anchoredPosition = new Vector2(0f, -20f);
 
             // Score Delta Popup (Floating +300)
             GameObject popupObj = new GameObject("ScoreDeltaPopup");
@@ -289,8 +294,10 @@ namespace PolyFuse.UI
             _scoreDeltaPopup = popupObj.AddComponent<Text>();
             _scoreDeltaPopup.font = font;
             _scoreDeltaPopup.raycastTarget = false;
+            _scoreDeltaPopup.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _scoreDeltaPopup.verticalOverflow = VerticalWrapMode.Overflow;
             _scoreDeltaPopup.text = "+150";
-            _scoreDeltaPopup.fontSize = 42;
+            _scoreDeltaPopup.fontSize = 38;
             _scoreDeltaPopup.fontStyle = FontStyle.Bold;
             _scoreDeltaPopup.alignment = TextAnchor.MiddleCenter;
             _scoreDeltaPopup.color = new Color(0.20f, 0.90f, 1.0f, 1f);
@@ -299,57 +306,42 @@ namespace PolyFuse.UI
             _popupRt.anchorMin = new Vector2(0.5f, 1f);
             _popupRt.anchorMax = new Vector2(0.5f, 1f);
             _popupRt.pivot = new Vector2(0.5f, 0.5f);
-            _popupRt.sizeDelta = new Vector2(400f, 60f);
-            _popupRt.anchoredPosition = new Vector2(0f, -115f);
+            _popupRt.sizeDelta = new Vector2(300f, 50f);
+            _popupRt.anchoredPosition = new Vector2(0f, -65f);
             popupObj.SetActive(false);
 
-            // 2. Combo Banner Container (Directly below Score, completely above the board)
+            // 3. Combo Count (Right below current score: e.g. 2  ● ● ●  2)
             GameObject comboObj = new GameObject("ComboBanner");
             comboObj.transform.SetParent(canvas.transform, false);
             _comboRt = comboObj.AddComponent<RectTransform>();
             _comboRt.anchorMin = new Vector2(0.5f, 1f);
             _comboRt.anchorMax = new Vector2(0.5f, 1f);
             _comboRt.pivot = new Vector2(0.5f, 1f);
-            _comboRt.sizeDelta = new Vector2(560f, 96f);
-            _comboRt.anchoredPosition = new Vector2(0f, -200f);
+            _comboRt.sizeDelta = new Vector2(440f, 44f);
+            _comboRt.anchoredPosition = new Vector2(0f, -108f);
             _comboCanvasGroup = comboObj.AddComponent<CanvasGroup>();
             _comboCanvasGroup.blocksRaycasts = false;
             _comboCanvasGroup.alpha = 0f;
 
-            // Combo Label
-            GameObject comboLabelObj = new GameObject("ComboLabel");
-            comboLabelObj.transform.SetParent(comboObj.transform, false);
-            _comboText = comboLabelObj.AddComponent<Text>();
+            GameObject comboTextObj = new GameObject("ComboText");
+            comboTextObj.transform.SetParent(comboObj.transform, false);
+            _comboText = comboTextObj.AddComponent<Text>();
             _comboText.font = font;
+            _comboText.supportRichText = true;
             _comboText.raycastTarget = false;
-            _comboText.text = "COMBO ×2!";
-            _comboText.fontSize = 44;
+            _comboText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _comboText.verticalOverflow = VerticalWrapMode.Overflow;
+            _comboText.fontSize = 28;
             _comboText.fontStyle = FontStyle.Bold;
             _comboText.alignment = TextAnchor.MiddleCenter;
-            _comboText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
-            AddOutline(comboLabelObj, new Color(0.12f, 0.08f, 0.02f, 0.9f), new Vector2(2.5f, -2.5f));
-            RectTransform clRt = comboLabelObj.GetComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0f, 0.42f);
-            clRt.anchorMax = new Vector2(1f, 1f);
-            clRt.sizeDelta = Vector2.zero;
+            _comboText.color = Color.white;
+            AddOutline(comboTextObj, new Color(0.04f, 0.06f, 0.10f, 0.8f), new Vector2(1.5f, -1.5f));
+            RectTransform ctRt = comboTextObj.GetComponent<RectTransform>();
+            ctRt.anchorMin = Vector2.zero;
+            ctRt.anchorMax = Vector2.one;
+            ctRt.sizeDelta = Vector2.zero;
 
-            // Combo Pips (●  ●  ●  ○  ○)
-            GameObject pipsObj = new GameObject("ComboPips");
-            pipsObj.transform.SetParent(comboObj.transform, false);
-            _comboPipsText = pipsObj.AddComponent<Text>();
-            _comboPipsText.font = font;
-            _comboPipsText.supportRichText = true;
-            _comboPipsText.raycastTarget = false;
-            _comboPipsText.fontSize = 36;
-            _comboPipsText.alignment = TextAnchor.MiddleCenter;
-            _comboPipsText.color = Color.white;
-            AddShadow(pipsObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(2f, -2f));
-            RectTransform pRt = pipsObj.GetComponent<RectTransform>();
-            pRt.anchorMin = new Vector2(0f, 0f);
-            pRt.anchorMax = new Vector2(1f, 0.45f);
-            pRt.sizeDelta = Vector2.zero;
-
-            // 3. Game Over Panel
+            // 4. Game Over Panel
             _gameOverPanel = new GameObject("GameOverPanel");
             _gameOverPanel.transform.SetParent(canvas.transform, false);
             RectTransform goRt = _gameOverPanel.AddComponent<RectTransform>();
@@ -481,10 +473,10 @@ namespace PolyFuse.UI
             _celebrationBannerText.alignment = TextAnchor.MiddleCenter;
             _celebrationBannerText.color = new Color(1.0f, 0.85f, 0.20f, 1.0f);
             AddOutline(celebTextObj, new Color(0.15f, 0.10f, 0.02f, 0.95f), new Vector2(2f, -2f));
-            RectTransform ctRt = celebTextObj.GetComponent<RectTransform>();
-            ctRt.anchorMin = Vector2.zero;
-            ctRt.anchorMax = Vector2.one;
-            ctRt.sizeDelta = Vector2.zero;
+            RectTransform clbRt = celebTextObj.GetComponent<RectTransform>();
+            clbRt.anchorMin = Vector2.zero;
+            clbRt.anchorMax = Vector2.one;
+            clbRt.sizeDelta = Vector2.zero;
 
             // 6. Settings Modal Panel
             BuildSettingsModal(canvas.transform, font);
@@ -526,7 +518,7 @@ namespace PolyFuse.UI
 
             if (_highScoreText != null)
             {
-                _highScoreText.text = $"★ BEST  {highScore:N0} ★";
+                _highScoreText.text = $"★  {highScore:N0}";
             }
         }
 
@@ -553,44 +545,44 @@ namespace PolyFuse.UI
 
             if (_comboText != null)
             {
-                string hypeTitle;
                 Color hypeColor;
+                if (comboStreak == 1) hypeColor = new Color(0.22f, 0.74f, 0.97f, 1.0f); // Sky Cyan
+                else if (comboStreak == 2) hypeColor = new Color(0.98f, 0.75f, 0.14f, 1.0f); // Warm Gold
+                else if (comboStreak == 3) hypeColor = new Color(0.96f, 0.62f, 0.04f, 1.0f); // Electric Amber
+                else if (comboStreak == 4) hypeColor = new Color(0.96f, 0.25f, 0.37f, 1.0f); // Neon Coral
+                else if (comboStreak == 5) hypeColor = new Color(0.85f, 0.27f, 0.94f, 1.0f); // Magenta
+                else if (comboStreak == 6) hypeColor = new Color(0.02f, 0.71f, 0.83f, 1.0f); // Electric Cyan
+                else hypeColor = new Color(0.66f, 0.33f, 0.97f, 1.0f); // Prismatic Purple
 
-                if (comboStreak == 1) { hypeTitle = "COMBO ×1"; hypeColor = new Color(0.35f, 0.88f, 1.0f); }
-                else if (comboStreak == 2) { hypeTitle = "COMBO ×2!"; hypeColor = new Color(1.0f, 0.82f, 0.20f); } // Warm Gold
-                else if (comboStreak == 3) { hypeTitle = "GREAT! ×3"; hypeColor = new Color(1.0f, 0.60f, 0.10f); } // Electric Amber
-                else if (comboStreak == 4) { hypeTitle = "AMAZING! ×4"; hypeColor = new Color(1.0f, 0.35f, 0.50f); } // Neon Coral
-                else if (comboStreak == 5) { hypeTitle = "UNSTOPPABLE! ×5"; hypeColor = new Color(1.0f, 0.15f, 0.65f); } // Magenta
-                else if (comboStreak == 6) { hypeTitle = "INCREDIBLE! ×6"; hypeColor = new Color(0.20f, 0.95f, 0.85f); } // Electric Cyan
-                else { hypeTitle = $"POLYFUSE GOD! ×{comboStreak}"; hypeColor = new Color(0.85f, 0.40f, 1.0f); } // Prismatic Purple
-
-                _comboText.text = hypeTitle;
-                _comboText.color = hypeColor;
-            }
-
-            if (_comboPipsText != null)
-            {
                 int totalPips = Mathf.Max(3, _maxGraceInStreak);
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+                // Format: e.g. "‹ 3× ›    ▲  ▲  ▲    ‹ 3× ›"
+                sb.Append($"<size=26><b>‹ {comboStreak}× ›</b></size>    ");
+
                 for (int i = 0; i < totalPips; i++)
                 {
                     if (i < graceRemaining)
                     {
                         if (graceRemaining <= 1)
                         {
-                            sb.Append("<color=#FF3366>●</color>  "); // Urgent pulse red
+                            sb.Append("<color=#FF3366>▲</color>  "); // Urgent red danger triangle
                         }
                         else
                         {
-                            sb.Append("<color=#FFD54F>●</color>  "); // Bright warm amber gold
+                            sb.Append("▲  "); // Glowing isometric triangle matching tier color
                         }
                     }
                     else
                     {
-                        sb.Append("<color=#475569>○</color>  "); // Distinct slate outline circle
+                        sb.Append("<color=#475569>△</color>  "); // Hollow/extinguished wireframe triangle
                     }
                 }
-                _comboPipsText.text = sb.ToString().TrimEnd();
+
+                sb.Append($"  <size=26><b>‹ {comboStreak}× ›</b></size>");
+
+                _comboText.text = sb.ToString();
+                _comboText.color = hypeColor;
             }
 
             if (_comboAnimCoroutine != null) StopCoroutine(_comboAnimCoroutine);
@@ -920,6 +912,12 @@ namespace PolyFuse.UI
             }
             if (_celebrationCoroutine != null) StopCoroutine(_celebrationCoroutine);
             _celebrationCoroutine = StartCoroutine(AnimateCelebrationBanner("★ NEW BEST! ★", new Color(1.0f, 0.85f, 0.20f, 1.0f)));
+        }
+
+        public void ShowBoardWipeBanner(int bonus)
+        {
+            if (_celebrationCoroutine != null) StopCoroutine(_celebrationCoroutine);
+            _celebrationCoroutine = StartCoroutine(AnimateCelebrationBanner("★ BOARD WIPE! ★", new Color(0.85f, 0.40f, 1.0f)));
         }
 
         private IEnumerator AnimateCelebrationBanner(string message, Color color)
