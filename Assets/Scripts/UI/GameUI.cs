@@ -150,6 +150,167 @@ namespace PolyFuse.UI
             return _uiFont;
         }
 
+        private static Sprite _subtleCardSprite;
+        private static Sprite _subtleRowSprite;
+        private static Sprite _subtleBtnSprite;
+        private static Sprite _toggleTrackSprite;
+        private static Sprite _pauseSprite;
+        private static Sprite _circleSprite;
+
+        public static Sprite GetSubtleCardSprite()
+        {
+            if (_subtleCardSprite != null) return _subtleCardSprite;
+            _subtleCardSprite = CreateRoundedRectSprite(128, 14, new Vector4(20, 20, 20, 20));
+            return _subtleCardSprite;
+        }
+
+        public static Sprite GetSubtleRowSprite()
+        {
+            if (_subtleRowSprite != null) return _subtleRowSprite;
+            _subtleRowSprite = CreateRoundedRectSprite(128, 10, new Vector4(16, 16, 16, 16));
+            return _subtleRowSprite;
+        }
+
+        public static Sprite GetSubtleButtonSprite()
+        {
+            if (_subtleBtnSprite != null) return _subtleBtnSprite;
+            _subtleBtnSprite = CreateRoundedRectSprite(128, 12, new Vector4(18, 18, 18, 18));
+            return _subtleBtnSprite;
+        }
+
+        public static Sprite GetToggleTrackSprite()
+        {
+            if (_toggleTrackSprite != null) return _toggleTrackSprite;
+            _toggleTrackSprite = CreateRoundedRectSprite(128, 32, new Vector4(34, 34, 34, 34));
+            return _toggleTrackSprite;
+        }
+
+        private static Sprite CreateRoundedRectSprite(int size, int radius, Vector4 border)
+        {
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            Color[] cols = new Color[size * size];
+
+            float r = radius;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = x + 0.5f;
+                    float py = y + 0.5f;
+
+                    float cx = (px < r) ? r : ((px > size - r) ? size - r : px);
+                    float cy = (py < r) ? r : ((py > size - r) ? size - r : py);
+
+                    float dx = px - cx;
+                    float dy = py - cy;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    float alpha = 1f;
+                    if (px < r || px > size - r || py < r || py > size - r)
+                    {
+                        alpha = Mathf.Clamp01((r - dist) + 0.5f);
+                    }
+
+                    cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(cols);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
+        }
+
+        public static Sprite GetCircleSprite()
+        {
+            if (_circleSprite != null) return _circleSprite;
+
+            int size = 128;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            Color[] cols = new Color[size * size];
+
+            float center = size * 0.5f;
+            float r = size * 0.48f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x + 0.5f) - center;
+                    float dy = (y + 0.5f) - center;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float alpha = Mathf.Clamp01((r - dist) + 0.5f);
+                    cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(cols);
+            tex.Apply();
+            _circleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _circleSprite;
+        }
+
+        public static Sprite GetPauseSprite()
+        {
+            if (_pauseSprite != null) return _pauseSprite;
+
+            int size = 128;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            Color[] cols = new Color[size * size];
+
+            float barWidth = 14f;
+            float barHeight = 44f;
+            float gap = 16f;
+            float center = size * 0.5f;
+
+            float leftBarMinX = center - (gap * 0.5f) - barWidth;
+            float leftBarMaxX = center - (gap * 0.5f);
+            float rightBarMinX = center + (gap * 0.5f);
+            float rightBarMaxX = center + (gap * 0.5f) + barWidth;
+            float barMinY = center - (barHeight * 0.5f);
+            float barMaxY = center + (barHeight * 0.5f);
+            float r = 4f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = x + 0.5f;
+                    float py = y + 0.5f;
+
+                    float alpha = 0f;
+
+                    if (px >= leftBarMinX - 1f && px <= leftBarMaxX + 1f && py >= barMinY - 1f && py <= barMaxY + 1f)
+                    {
+                        float cx = Mathf.Clamp(px, leftBarMinX + r, leftBarMaxX - r);
+                        float cy = Mathf.Clamp(py, barMinY + r, barMaxY - r);
+                        float dist = Vector2.Distance(new Vector2(px, py), new Vector2(cx, cy));
+                        alpha = Mathf.Clamp01((r - dist) + 0.5f);
+                    }
+                    else if (px >= rightBarMinX - 1f && px <= rightBarMaxX + 1f && py >= barMinY - 1f && py <= barMaxY + 1f)
+                    {
+                        float cx = Mathf.Clamp(px, rightBarMinX + r, rightBarMaxX - r);
+                        float cy = Mathf.Clamp(py, barMinY + r, barMaxY - r);
+                        float dist = Vector2.Distance(new Vector2(px, py), new Vector2(cx, cy));
+                        alpha = Mathf.Clamp01((r - dist) + 0.5f);
+                    }
+
+                    cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(cols);
+            tex.Apply();
+
+            _pauseSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _pauseSprite;
+        }
+
         private static Sprite _gearSprite;
 
         public static Sprite GetGearSprite()
@@ -157,18 +318,17 @@ namespace PolyFuse.UI
             if (_gearSprite != null) return _gearSprite;
 
             int size = 128;
-            float center = size * 0.5f;
-            float rHole = 15f;
-            float rHub = 36f;
-            float rTeeth = 52f;
-            int numTeeth = 6;
-            float toothPeriod = (2f * Mathf.PI) / numTeeth;
-
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             tex.filterMode = FilterMode.Bilinear;
             tex.wrapMode = TextureWrapMode.Clamp;
-
             Color[] cols = new Color[size * size];
+
+            float center = size * 0.5f;
+            float rHole = size * 0.14f;
+            float rHub = size * 0.28f;
+            float rTeeth = size * 0.42f;
+            int numTeeth = 6;
+            float toothPeriod = (2f * Mathf.PI) / numTeeth;
 
             for (int y = 0; y < size; y++)
             {
@@ -180,12 +340,13 @@ namespace PolyFuse.UI
 
                     float alpha = 0f;
 
-                    if (dist >= rHole && dist <= rTeeth)
+                    if (dist >= rHole - 1f && dist <= rTeeth + 1f)
                     {
+                        float innerAlpha = Mathf.Clamp01((dist - (rHole - 0.5f)));
+
                         if (dist <= rHub)
                         {
-                            float innerEdge = Mathf.Clamp01((dist - rHole) / 1.5f);
-                            alpha = innerEdge;
+                            alpha = innerAlpha;
                         }
                         else
                         {
@@ -193,19 +354,25 @@ namespace PolyFuse.UI
                             if (angle < 0f) angle += 2f * Mathf.PI;
                             float modAngle = angle % toothPeriod;
                             float halfTooth = toothPeriod * 0.5f;
-                            float angleDist = Mathf.Abs(modAngle - halfTooth * 0.5f);
-                            float toothWidth = 0.52f * halfTooth;
+                            float angleDist = Mathf.Abs(modAngle - halfTooth);
+                            float toothWidth = 0.40f * halfTooth;
 
                             if (angleDist < toothWidth)
                             {
-                                float outerEdge = Mathf.Clamp01((rTeeth - dist) / 1.5f);
-                                alpha = outerEdge;
+                                float outerAlpha = Mathf.Clamp01((rTeeth - dist) + 0.5f);
+                                alpha = Mathf.Min(innerAlpha, outerAlpha);
                             }
-                            else if (angleDist < toothWidth + 0.08f)
+                            else if (angleDist < toothWidth + 0.10f)
                             {
-                                float sideFade = 1f - (angleDist - toothWidth) / 0.08f;
-                                float outerEdge = Mathf.Clamp01((rTeeth - dist) / 1.5f);
-                                alpha = Mathf.Clamp01(sideFade * outerEdge);
+                                float sideAlpha = 1f - (angleDist - toothWidth) / 0.10f;
+                                float hubAlpha = Mathf.Clamp01((rHub - dist) + 0.5f);
+                                float outerAlpha = Mathf.Clamp01((rTeeth - dist) + 0.5f);
+                                alpha = Mathf.Max(hubAlpha, sideAlpha * outerAlpha) * innerAlpha;
+                            }
+                            else
+                            {
+                                float hubAlpha = Mathf.Clamp01((rHub - dist) + 0.5f);
+                                alpha = hubAlpha * innerAlpha;
                             }
                         }
                     }
@@ -246,7 +413,7 @@ namespace PolyFuse.UI
 
             Font font = GetSystemFont();
 
-            // 1. High Score Text (Top-Left)
+            // 1. High Score Text (Top-Left - Clean floating gold text)
             GameObject highScoreObj = new GameObject("HighScoreText");
             highScoreObj.transform.SetParent(canvas.transform, false);
             _highScoreText = highScoreObj.AddComponent<Text>();
@@ -255,7 +422,7 @@ namespace PolyFuse.UI
             _highScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _highScoreText.verticalOverflow = VerticalWrapMode.Overflow;
             _highScoreText.text = "★ 0";
-            _highScoreText.fontSize = 28;
+            _highScoreText.fontSize = 46;
             _highScoreText.fontStyle = FontStyle.Bold;
             _highScoreText.alignment = TextAnchor.MiddleLeft;
             _highScoreText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
@@ -264,8 +431,8 @@ namespace PolyFuse.UI
             _highScoreRt.anchorMin = new Vector2(0f, 1f);
             _highScoreRt.anchorMax = new Vector2(0f, 1f);
             _highScoreRt.pivot = new Vector2(0f, 1f);
-            _highScoreRt.sizeDelta = new Vector2(300f, 50f);
-            _highScoreRt.anchoredPosition = new Vector2(36f, -32f);
+            _highScoreRt.sizeDelta = new Vector2(380f, 64f);
+            _highScoreRt.anchoredPosition = new Vector2(36f, -28f);
 
             // 2. Current Score (Top-Mid Center)
             GameObject scoreObj = new GameObject("ScoreText");
@@ -276,17 +443,17 @@ namespace PolyFuse.UI
             _scoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _scoreText.verticalOverflow = VerticalWrapMode.Overflow;
             _scoreText.text = "0";
-            _scoreText.fontSize = 76;
+            _scoreText.fontSize = 94;
             _scoreText.fontStyle = FontStyle.Bold;
             _scoreText.alignment = TextAnchor.MiddleCenter;
             _scoreText.color = Color.white;
-            AddOutline(scoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2f, -2f));
+            AddOutline(scoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2.5f, -2.5f));
             _scoreRt = scoreObj.GetComponent<RectTransform>();
             _scoreRt.anchorMin = new Vector2(0.5f, 1f);
             _scoreRt.anchorMax = new Vector2(0.5f, 1f);
             _scoreRt.pivot = new Vector2(0.5f, 1f);
-            _scoreRt.sizeDelta = new Vector2(360f, 85f);
-            _scoreRt.anchoredPosition = new Vector2(0f, -20f);
+            _scoreRt.sizeDelta = new Vector2(420f, 100f);
+            _scoreRt.anchoredPosition = new Vector2(0f, -14f);
 
             // Score Delta Popup (Floating +300)
             GameObject popupObj = new GameObject("ScoreDeltaPopup");
@@ -297,7 +464,7 @@ namespace PolyFuse.UI
             _scoreDeltaPopup.horizontalOverflow = HorizontalWrapMode.Overflow;
             _scoreDeltaPopup.verticalOverflow = VerticalWrapMode.Overflow;
             _scoreDeltaPopup.text = "+150";
-            _scoreDeltaPopup.fontSize = 38;
+            _scoreDeltaPopup.fontSize = 44;
             _scoreDeltaPopup.fontStyle = FontStyle.Bold;
             _scoreDeltaPopup.alignment = TextAnchor.MiddleCenter;
             _scoreDeltaPopup.color = new Color(0.20f, 0.90f, 1.0f, 1f);
@@ -310,15 +477,15 @@ namespace PolyFuse.UI
             _popupRt.anchoredPosition = new Vector2(0f, -65f);
             popupObj.SetActive(false);
 
-            // 3. Combo Count (Right below current score: e.g. 2  ● ● ●  2)
+            // 3. Combo Count (Dropped down comfortably with clean breathing room)
             GameObject comboObj = new GameObject("ComboBanner");
             comboObj.transform.SetParent(canvas.transform, false);
             _comboRt = comboObj.AddComponent<RectTransform>();
             _comboRt.anchorMin = new Vector2(0.5f, 1f);
             _comboRt.anchorMax = new Vector2(0.5f, 1f);
             _comboRt.pivot = new Vector2(0.5f, 1f);
-            _comboRt.sizeDelta = new Vector2(440f, 44f);
-            _comboRt.anchoredPosition = new Vector2(0f, -108f);
+            _comboRt.sizeDelta = new Vector2(640f, 74f);
+            _comboRt.anchoredPosition = new Vector2(0f, -185f);
             _comboCanvasGroup = comboObj.AddComponent<CanvasGroup>();
             _comboCanvasGroup.blocksRaycasts = false;
             _comboCanvasGroup.alpha = 0f;
@@ -331,7 +498,7 @@ namespace PolyFuse.UI
             _comboText.raycastTarget = false;
             _comboText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _comboText.verticalOverflow = VerticalWrapMode.Overflow;
-            _comboText.fontSize = 28;
+            _comboText.fontSize = 46;
             _comboText.fontStyle = FontStyle.Bold;
             _comboText.alignment = TextAnchor.MiddleCenter;
             _comboText.color = Color.white;
@@ -352,13 +519,19 @@ namespace PolyFuse.UI
             Image goBg = _gameOverPanel.AddComponent<Image>();
             goBg.color = new Color(0.04f, 0.05f, 0.08f, 0.94f);
 
-            // Content Box
+            // Content Box (Dark Obsidian Glass Card)
             GameObject contentBox = new GameObject("ContentBox");
             contentBox.transform.SetParent(_gameOverPanel.transform, false);
             RectTransform cRt = contentBox.AddComponent<RectTransform>();
             cRt.anchorMin = new Vector2(0.5f, 0.5f);
             cRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cRt.sizeDelta = new Vector2(600f, 500f);
+            cRt.pivot = new Vector2(0.5f, 0.5f);
+            cRt.sizeDelta = new Vector2(560f, 480f);
+
+            Image cbBg = contentBox.AddComponent<Image>();
+            cbBg.color = new Color(0.08f, 0.10f, 0.16f, 0.96f);
+            AddOutline(contentBox, new Color(0.96f, 0.35f, 0.45f, 0.45f), new Vector2(1.5f, -1.5f));
+            AddShadow(contentBox, new Color(0f, 0f, 0f, 0.75f), new Vector2(6f, -6f));
 
             // Title
             GameObject titleObj = new GameObject("GameOverTitle");
@@ -367,14 +540,14 @@ namespace PolyFuse.UI
             titleText.font = font;
             titleText.raycastTarget = false;
             titleText.text = "GAME OVER";
-            titleText.fontSize = 54;
+            titleText.fontSize = 46;
             titleText.fontStyle = FontStyle.Bold;
             titleText.alignment = TextAnchor.MiddleCenter;
-            titleText.color = new Color(0.96f, 0.35f, 0.42f, 1f);
-            AddOutline(titleObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(2f, -2f));
+            titleText.color = new Color(0.96f, 0.35f, 0.45f, 1f);
+            AddOutline(titleObj, new Color(0.04f, 0.06f, 0.10f, 0.90f), new Vector2(2f, -2f));
             RectTransform tRt = titleObj.GetComponent<RectTransform>();
-            tRt.anchorMin = new Vector2(0f, 0.7f);
-            tRt.anchorMax = new Vector2(1f, 1f);
+            tRt.anchorMin = new Vector2(0f, 0.68f);
+            tRt.anchorMax = new Vector2(1f, 0.95f);
             tRt.sizeDelta = Vector2.zero;
 
             // Final Score
@@ -384,25 +557,25 @@ namespace PolyFuse.UI
             _finalScoreText.font = font;
             _finalScoreText.raycastTarget = false;
             _finalScoreText.text = "SCORE\n0";
-            _finalScoreText.fontSize = 38;
+            _finalScoreText.fontSize = 40;
             _finalScoreText.fontStyle = FontStyle.Bold;
             _finalScoreText.alignment = TextAnchor.MiddleCenter;
             _finalScoreText.color = Color.white;
-            AddOutline(finalScoreObj, new Color(0f, 0f, 0f, 0.8f), new Vector2(1.5f, -1.5f));
+            AddOutline(finalScoreObj, new Color(0.04f, 0.06f, 0.10f, 0.90f), new Vector2(1.5f, -1.5f));
             RectTransform fsRt = finalScoreObj.GetComponent<RectTransform>();
-            fsRt.anchorMin = new Vector2(0f, 0.35f);
-            fsRt.anchorMax = new Vector2(1f, 0.7f);
+            fsRt.anchorMin = new Vector2(0f, 0.32f);
+            fsRt.anchorMax = new Vector2(1f, 0.68f);
             fsRt.sizeDelta = Vector2.zero;
 
-            // Restart Button
+            // Restart Button (Electric Cyan)
             GameObject btnObj = new GameObject("RestartButton");
             btnObj.transform.SetParent(contentBox.transform, false);
             Image btnImg = btnObj.AddComponent<Image>();
-            btnImg.color = new Color(0.20f, 0.85f, 0.95f, 1f);
+            btnImg.color = new Color(0.15f, 0.82f, 0.98f, 1f);
             _restartButton = btnObj.AddComponent<Button>();
             RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-            btnRt.anchorMin = new Vector2(0.15f, 0.05f);
-            btnRt.anchorMax = new Vector2(0.85f, 0.28f);
+            btnRt.anchorMin = new Vector2(0.12f, 0.08f);
+            btnRt.anchorMax = new Vector2(0.88f, 0.26f);
             btnRt.sizeDelta = Vector2.zero;
 
             GameObject btnLabelObj = new GameObject("BtnLabel");
@@ -410,45 +583,47 @@ namespace PolyFuse.UI
             Text btnLabel = btnLabelObj.AddComponent<Text>();
             btnLabel.font = font;
             btnLabel.raycastTarget = false;
-            btnLabel.text = "PLAY AGAIN";
-            btnLabel.fontSize = 32;
+            btnLabel.text = "▶  PLAY AGAIN";
+            btnLabel.fontSize = 28;
             btnLabel.fontStyle = FontStyle.Bold;
             btnLabel.alignment = TextAnchor.MiddleCenter;
-            btnLabel.color = new Color(0.06f, 0.07f, 0.10f, 1.0f);
+            btnLabel.color = new Color(0.04f, 0.07f, 0.12f, 1.0f);
             RectTransform blRt = btnLabelObj.GetComponent<RectTransform>();
             blRt.anchorMin = Vector2.zero;
             blRt.anchorMax = Vector2.one;
             blRt.sizeDelta = Vector2.zero;
 
-            // 4. Top-Right Settings Icon Button
+            // 5. Top-Right Floating Settings Gear Button (Naked icon, no outer box)
             GameObject setBtnObj = new GameObject("SettingsButton");
             setBtnObj.transform.SetParent(canvas.transform, false);
             _settingsBtnRt = setBtnObj.AddComponent<RectTransform>();
             _settingsBtnRt.anchorMin = new Vector2(1f, 1f);
             _settingsBtnRt.anchorMax = new Vector2(1f, 1f);
             _settingsBtnRt.pivot = new Vector2(1f, 1f);
-            _settingsBtnRt.sizeDelta = new Vector2(74f, 74f);
-            _settingsBtnRt.anchoredPosition = new Vector2(-30f, -25f);
+            _settingsBtnRt.sizeDelta = new Vector2(72f, 72f);
+            _settingsBtnRt.anchoredPosition = new Vector2(-36f, -26f);
 
-            Image setImg = setBtnObj.AddComponent<Image>();
-            setImg.color = new Color(0.12f, 0.15f, 0.22f, 0.9f);
-            AddOutline(setBtnObj, new Color(0.25f, 0.40f, 0.60f, 0.6f), new Vector2(1.5f, -1.5f));
+            Image setHitbox = setBtnObj.AddComponent<Image>();
+            setHitbox.color = Color.clear; // Invisible touch hitbox
+            setHitbox.raycastTarget = true;
             _settingsButton = setBtnObj.AddComponent<Button>();
 
             GameObject setIconObj = new GameObject("GearIcon");
             setIconObj.transform.SetParent(setBtnObj.transform, false);
             Image gearImg = setIconObj.AddComponent<Image>();
             gearImg.sprite = GetGearSprite();
-            gearImg.color = new Color(0.75f, 0.88f, 1.0f, 1.0f);
+            gearImg.color = new Color(0.85f, 0.90f, 0.98f, 0.90f);
             gearImg.raycastTarget = false;
+            AddShadow(setIconObj, new Color(0f, 0f, 0f, 0.70f), new Vector2(2f, -2f));
             RectTransform siRt = setIconObj.GetComponent<RectTransform>();
-            siRt.anchorMin = Vector2.zero;
-            siRt.anchorMax = Vector2.one;
-            siRt.sizeDelta = new Vector2(-24f, -24f);
+            siRt.anchorMin = new Vector2(0.5f, 0.5f);
+            siRt.anchorMax = new Vector2(0.5f, 0.5f);
+            siRt.pivot = new Vector2(0.5f, 0.5f);
+            siRt.sizeDelta = new Vector2(52f, 52f);
 
             _settingsButton.onClick.AddListener(ToggleSettingsModal);
 
-            // 5. Celebration Banner (CLOSE CALL & NEW BEST)
+            // 6. Celebration Banner (CLOSE CALL & NEW BEST)
             GameObject celebObj = new GameObject("CelebrationBanner");
             celebObj.transform.SetParent(canvas.transform, false);
             _celebrationRt = celebObj.AddComponent<RectTransform>();
@@ -478,7 +653,7 @@ namespace PolyFuse.UI
             clbRt.anchorMax = Vector2.one;
             clbRt.sizeDelta = Vector2.zero;
 
-            // 6. Settings Modal Panel
+            // 7. Settings Modal Panel
             BuildSettingsModal(canvas.transform, font);
         }
 
@@ -518,8 +693,58 @@ namespace PolyFuse.UI
 
             if (_highScoreText != null)
             {
-                _highScoreText.text = $"★  {highScore:N0}";
+                _highScoreText.text = $"★ {highScore:N0}";
             }
+        }
+
+        private IEnumerator ShowDeltaPopup(int points)
+        {
+            if (_scoreDeltaPopup == null) yield break;
+
+            _scoreDeltaPopup.text = $"+{points:N0}";
+            _scoreDeltaPopup.gameObject.SetActive(true);
+
+            Vector2 startPos = new Vector2(0f, -65f);
+            Vector2 endPos = new Vector2(0f, -125f);
+            Color startColor = new Color(0.20f, 0.90f, 1.0f, 1f);
+            Color endColor = new Color(0.20f, 0.90f, 1.0f, 0f);
+
+            float elapsed = 0f;
+            float dur = 0.55f;
+
+            while (elapsed < dur)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+                _popupRt.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+                _scoreDeltaPopup.color = Color.Lerp(startColor, endColor, t);
+                yield return null;
+            }
+
+            _scoreDeltaPopup.gameObject.SetActive(false);
+            _deltaPopupCoroutine = null;
+        }
+
+        private IEnumerator PunchScoreText()
+        {
+            if (_scoreRt == null) yield break;
+
+            Vector3 startScale = Vector3.one;
+            Vector3 peakScale = Vector3.one * 1.15f;
+
+            float elapsed = 0f;
+            float dur = 0.12f;
+
+            while (elapsed < dur)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+                _scoreRt.localScale = Vector3.Lerp(startScale, peakScale, Mathf.Sin(t * Mathf.PI));
+                yield return null;
+            }
+
+            _scoreRt.localScale = Vector3.one;
+            _scorePunchCoroutine = null;
         }
 
         public void UpdateComboState(int comboStreak, int graceRemaining, float pitch)
@@ -534,14 +759,7 @@ namespace PolyFuse.UI
                 return;
             }
 
-            if (graceRemaining > _maxGraceInStreak)
-            {
-                _maxGraceInStreak = graceRemaining;
-            }
-            else if (graceRemaining == 3 && _maxGraceInStreak > 3)
-            {
-                _maxGraceInStreak = 3;
-            }
+            _maxGraceInStreak = Mathf.Max(_maxGraceInStreak, graceRemaining);
 
             if (_comboText != null)
             {
@@ -557,8 +775,8 @@ namespace PolyFuse.UI
                 int totalPips = Mathf.Max(3, _maxGraceInStreak);
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-                // Format: e.g. "‹ 3× ›    ▲  ▲  ▲    ‹ 3× ›"
-                sb.Append($"<size=26><b>‹ {comboStreak}× ›</b></size>    ");
+                // Format: e.g. "‹ 3× ›   ▲  ▲  ▲   ‹ 3× ›"
+                sb.Append($"<size=44><b>‹ {comboStreak}× ›</b></size>   ");
 
                 for (int i = 0; i < totalPips; i++)
                 {
@@ -566,20 +784,20 @@ namespace PolyFuse.UI
                     {
                         if (graceRemaining <= 1)
                         {
-                            sb.Append("<color=#FF3366>▲</color>  "); // Urgent red danger triangle
+                            sb.Append("<size=38><color=#FF3366>▲</color></size> "); // Urgent red danger triangle
                         }
                         else
                         {
-                            sb.Append("▲  "); // Glowing isometric triangle matching tier color
+                            sb.Append("<size=38>▲</size> "); // Glowing isometric triangle matching tier color
                         }
                     }
                     else
                     {
-                        sb.Append("<color=#475569>△</color>  "); // Hollow/extinguished wireframe triangle
+                        sb.Append("<size=38><color=#475569>△</color></size> "); // Hollow/extinguished wireframe triangle
                     }
                 }
 
-                sb.Append($"  <size=26><b>‹ {comboStreak}× ›</b></size>");
+                sb.Append($"  <size=44><b>‹ {comboStreak}× ›</b></size>");
 
                 _comboText.text = sb.ToString();
                 _comboText.color = hypeColor;
@@ -587,64 +805,6 @@ namespace PolyFuse.UI
 
             if (_comboAnimCoroutine != null) StopCoroutine(_comboAnimCoroutine);
             _comboAnimCoroutine = StartCoroutine(AnimateComboBanner());
-        }
-
-        private IEnumerator PunchScoreText()
-        {
-            if (_scoreText == null) yield break;
-            Transform t = _scoreText.transform;
-            Vector3 normalScale = Vector3.one;
-            Vector3 punchScale = Vector3.one * 1.18f;
-
-            float elapsed = 0f;
-            float punchDur = 0.08f;
-            while (elapsed < punchDur)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                t.localScale = Vector3.Lerp(normalScale, punchScale, elapsed / punchDur);
-                yield return null;
-            }
-
-            elapsed = 0f;
-            float settleDur = 0.12f;
-            while (elapsed < settleDur)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                t.localScale = Vector3.Lerp(punchScale, normalScale, elapsed / settleDur);
-                yield return null;
-            }
-            t.localScale = normalScale;
-            _scorePunchCoroutine = null;
-        }
-
-        private IEnumerator ShowDeltaPopup(int delta)
-        {
-            if (_scoreDeltaPopup == null) yield break;
-            _scoreDeltaPopup.gameObject.SetActive(true);
-            _scoreDeltaPopup.text = $"+{delta:N0}";
-            
-            RectTransform rt = _scoreDeltaPopup.GetComponent<RectTransform>();
-            Vector2 startPos = new Vector2(0f, 0f);
-            Vector2 endPos = new Vector2(0f, 60f);
-            rt.anchoredPosition = startPos;
-
-            Color c = new Color(0.20f, 0.90f, 1.0f, 1f);
-            _scoreDeltaPopup.color = c;
-
-            float elapsed = 0f;
-            float duration = 0.7f;
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float progress = elapsed / duration;
-                rt.anchoredPosition = Vector2.Lerp(startPos, endPos, progress);
-                c.a = Mathf.Lerp(1f, 0f, progress * progress);
-                _scoreDeltaPopup.color = c;
-                yield return null;
-            }
-
-            _scoreDeltaPopup.gameObject.SetActive(false);
-            _deltaPopupCoroutine = null;
         }
 
         private IEnumerator AnimateComboBanner()
@@ -714,8 +874,8 @@ namespace PolyFuse.UI
             }
         }
 
-        private Text _soundBtnLabel;
-        private Text _hapticsBtnLabel;
+        private Text _soundOptionText;
+        private Text _hapticsOptionText;
 
         private void BuildSettingsModal(Transform parent, Font font)
         {
@@ -726,24 +886,33 @@ namespace PolyFuse.UI
             smRt.anchorMax = Vector2.one;
             smRt.sizeDelta = Vector2.zero;
 
+            // Fullscreen dark frosted dimming - Tapping backdrop resumes
             Image smBg = _settingsModalPanel.AddComponent<Image>();
-            smBg.color = new Color(0.04f, 0.05f, 0.08f, 0.95f);
+            smBg.color = new Color(0.02f, 0.04f, 0.07f, 0.94f);
+            Button bgDismiss = _settingsModalPanel.AddComponent<Button>();
+            bgDismiss.onClick.AddListener(CloseSettingsModal);
 
-            // Dialog Card
-            GameObject cardObj = new GameObject("Card");
-            cardObj.transform.SetParent(_settingsModalPanel.transform, false);
-            RectTransform cardRt = cardObj.AddComponent<RectTransform>();
-            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(620f, 620f);
+            // Centered Vertical Container (No heavy box)
+            GameObject listContainer = new GameObject("ZenListContainer");
+            listContainer.transform.SetParent(_settingsModalPanel.transform, false);
+            RectTransform lcRt = listContainer.AddComponent<RectTransform>();
+            lcRt.anchorMin = new Vector2(0.5f, 0.5f);
+            lcRt.anchorMax = new Vector2(0.5f, 0.5f);
+            lcRt.pivot = new Vector2(0.5f, 0.5f);
+            lcRt.sizeDelta = new Vector2(520f, 480f);
 
-            Image cardBg = cardObj.AddComponent<Image>();
-            cardBg.color = new Color(0.10f, 0.12f, 0.18f, 1.0f);
-            AddOutline(cardObj, new Color(0.20f, 0.85f, 1.0f, 0.6f), new Vector2(2f, -2f));
+            VerticalLayoutGroup vlg = listContainer.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(0, 0, 0, 0);
+            vlg.spacing = 24f; // Clean 24px gap between Title and Buttons
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
 
-            // Title
-            GameObject titleObj = new GameObject("SettingsTitle");
-            titleObj.transform.SetParent(cardObj.transform, false);
+            // 1. Title: "PAUSED"
+            GameObject titleObj = new GameObject("PauseTitle");
+            titleObj.transform.SetParent(listContainer.transform, false);
             Text title = titleObj.AddComponent<Text>();
             title.font = font;
             title.text = "PAUSED";
@@ -751,57 +920,26 @@ namespace PolyFuse.UI
             title.fontStyle = FontStyle.Bold;
             title.alignment = TextAnchor.MiddleCenter;
             title.color = Color.white;
-            RectTransform tRt = titleObj.GetComponent<RectTransform>();
-            tRt.anchorMin = new Vector2(0f, 1f);
-            tRt.anchorMax = new Vector2(1f, 1f);
-            tRt.pivot = new Vector2(0.5f, 1f);
-            tRt.sizeDelta = new Vector2(0f, 90f);
-            tRt.anchoredPosition = new Vector2(0f, -15f);
+            title.raycastTarget = false;
+            AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
+            LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
+            tLe.minHeight = 52f;
+            tLe.preferredHeight = 52f;
 
-            // Close Button
-            GameObject closeBtnObj = new GameObject("CloseButton");
-            closeBtnObj.transform.SetParent(cardObj.transform, false);
-            RectTransform cbRt = closeBtnObj.AddComponent<RectTransform>();
-            cbRt.anchorMin = new Vector2(1f, 1f);
-            cbRt.anchorMax = new Vector2(1f, 1f);
-            cbRt.pivot = new Vector2(1f, 1f);
-            cbRt.sizeDelta = new Vector2(60f, 60f);
-            cbRt.anchoredPosition = new Vector2(-15f, -15f);
-            Button closeBtn = closeBtnObj.AddComponent<Button>();
-            closeBtn.onClick.AddListener(CloseSettingsModal);
-
-            GameObject closeTxtObj = new GameObject("Text");
-            closeTxtObj.transform.SetParent(closeBtnObj.transform, false);
-            Text closeTxt = closeTxtObj.AddComponent<Text>();
-            closeTxt.font = font;
-            closeTxt.text = "✕";
-            closeTxt.fontSize = 32;
-            closeTxt.alignment = TextAnchor.MiddleCenter;
-            closeTxt.color = new Color(0.6f, 0.7f, 0.85f, 1f);
-            RectTransform ctRt = closeTxtObj.GetComponent<RectTransform>();
-            ctRt.anchorMin = Vector2.zero;
-            ctRt.anchorMax = Vector2.one;
-            ctRt.sizeDelta = Vector2.zero;
-
-            // Buttons Container with VerticalLayoutGroup for identical spacing
-            GameObject btnContainer = new GameObject("ButtonsContainer");
-            btnContainer.transform.SetParent(cardObj.transform, false);
-            RectTransform bcRt = btnContainer.AddComponent<RectTransform>();
-            bcRt.anchorMin = Vector2.zero;
-            bcRt.anchorMax = Vector2.one;
-            bcRt.sizeDelta = Vector2.zero;
-
-            VerticalLayoutGroup layout = btnContainer.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(45, 45, 105, 35);
-            layout.spacing = 18f;
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
+            // 2. Buttons Stack Container (Guarantees 100% equal spacing between all 4 buttons)
+            GameObject btnsObj = new GameObject("ButtonsStack");
+            btnsObj.transform.SetParent(listContainer.transform, false);
+            VerticalLayoutGroup bVlg = btnsObj.AddComponent<VerticalLayoutGroup>();
+            bVlg.padding = new RectOffset(0, 0, 0, 0);
+            bVlg.spacing = 16f; // Exactly 16px between every button!
+            bVlg.childAlignment = TextAnchor.MiddleCenter;
+            bVlg.childControlWidth = true;
+            bVlg.childControlHeight = true;
+            bVlg.childForceExpandWidth = true;
+            bVlg.childForceExpandHeight = false;
 
             // Button 1: Sound FX Toggle
-            CreateSettingsOptionButton(btnContainer.transform, font, "SOUND: ON", out _soundBtnLabel, () =>
+            CreateMinimalListButton(btnsObj.transform, font, "SOUND:  <color=#10B981>ON</color>", out _soundOptionText, () =>
             {
                 ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
                 if (audio != null)
@@ -809,57 +947,69 @@ namespace PolyFuse.UI
                     audio.ToggleSound();
                     UpdateSettingsButtonLabels();
                 }
-            });
+            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f));
 
             // Button 2: Haptics Toggle
-            CreateSettingsOptionButton(btnContainer.transform, font, "HAPTICS: ON", out _hapticsBtnLabel, () =>
+            CreateMinimalListButton(btnsObj.transform, font, "HAPTICS:  <color=#10B981>ON</color>", out _hapticsOptionText, () =>
             {
                 PolyFuse.Juice.HapticFeedbackManager.Instance?.ToggleHaptics();
                 UpdateSettingsButtonLabels();
-            });
+            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f));
 
-            // Button 3: Restart Run
-            Text dummy;
-            CreateSettingsOptionButton(btnContainer.transform, font, "↺ RESTART RUN", out dummy, () =>
+            // Button 3: Restart Run (Vibrant Crimson with crisp white text)
+            Text dummyRestart;
+            CreateMinimalListButton(btnsObj.transform, font, "↺  RESTART RUN", out dummyRestart, () =>
             {
                 CloseSettingsModal();
                 OnRestartRequested?.Invoke();
-            }, new Color(0.96f, 0.35f, 0.45f, 1.0f));
+            }, new Color(0.85f, 0.20f, 0.30f, 0.92f), new Color(0.96f, 0.35f, 0.45f, 0.50f), textColor: Color.white);
 
-            // Button 4: Resume
-            CreateSettingsOptionButton(btnContainer.transform, font, "▶ RESUME", out dummy, () =>
+            // Button 4: Resume Hero Button
+            Text dummyResume;
+            CreateMinimalListButton(btnsObj.transform, font, "▶  RESUME", out dummyResume, () =>
             {
                 CloseSettingsModal();
-            }, new Color(0.20f, 0.85f, 0.95f, 1.0f));
+            }, new Color(0.00f, 0.90f, 1.0f, 1.0f), new Color(0.00f, 0.90f, 1.0f, 0.50f), textColor: new Color(0.04f, 0.07f, 0.12f, 1.0f));
 
             _settingsModalPanel.SetActive(false);
             UpdateSettingsButtonLabels();
         }
 
-        private void CreateSettingsOptionButton(Transform parent, Font font, string initialText, out Text labelText, Action onClick, Color? btnColor = null)
+        private void CreateMinimalListButton(Transform parent, Font font, string text, out Text labelText, Action onClick, Color bgColor, Color outlineColor, Color? textColor = null, float height = 84f, int fontSize = 26)
         {
-            GameObject btnObj = new GameObject("OptButton");
+            GameObject btnObj = new GameObject($"ListBtn_{text}");
             btnObj.transform.SetParent(parent, false);
+
+            RectTransform rt = btnObj.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(520f, height);
+
             Image img = btnObj.AddComponent<Image>();
-            img.color = btnColor ?? new Color(0.18f, 0.22f, 0.32f, 1.0f);
+            img.sprite = GetSubtleButtonSprite();
+            img.type = Image.Type.Sliced;
+            img.color = bgColor;
+            if (outlineColor != Color.clear)
+            {
+                AddOutline(btnObj, outlineColor, new Vector2(1.5f, -1.5f));
+            }
+
             Button btn = btnObj.AddComponent<Button>();
             btn.onClick.AddListener(() => onClick?.Invoke());
 
             LayoutElement le = btnObj.AddComponent<LayoutElement>();
-            le.minHeight = 92f;
-            le.preferredHeight = 92f;
-            le.flexibleHeight = 0f;
+            le.minHeight = height;
+            le.preferredHeight = height;
 
             GameObject lblObj = new GameObject("Label");
             lblObj.transform.SetParent(btnObj.transform, false);
             labelText = lblObj.AddComponent<Text>();
             labelText.font = font;
-            labelText.raycastTarget = false;
-            labelText.text = initialText;
-            labelText.fontSize = 28;
+            labelText.supportRichText = true;
+            labelText.text = text;
+            labelText.fontSize = fontSize;
             labelText.fontStyle = FontStyle.Bold;
             labelText.alignment = TextAnchor.MiddleCenter;
-            labelText.color = btnColor.HasValue ? new Color(0.06f, 0.07f, 0.10f, 1.0f) : Color.white;
+            labelText.color = textColor ?? Color.white;
+            labelText.raycastTarget = false;
 
             RectTransform lRt = lblObj.GetComponent<RectTransform>();
             lRt.anchorMin = Vector2.zero;
@@ -870,13 +1020,15 @@ namespace PolyFuse.UI
         private void UpdateSettingsButtonLabels()
         {
             ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
-            if (_soundBtnLabel != null && audio != null)
+            if (_soundOptionText != null && audio != null)
             {
-                _soundBtnLabel.text = audio.IsSoundEnabled ? "SOUND FX:  ON" : "SOUND FX:  MUTED";
+                bool on = audio.IsSoundEnabled;
+                _soundOptionText.text = on ? "SOUND:  <color=#10B981>ON</color>" : "SOUND:  <color=#64748B>OFF</color>";
             }
-            if (_hapticsBtnLabel != null && PolyFuse.Juice.HapticFeedbackManager.Instance != null)
+            if (_hapticsOptionText != null && PolyFuse.Juice.HapticFeedbackManager.Instance != null)
             {
-                _hapticsBtnLabel.text = PolyFuse.Juice.HapticFeedbackManager.Instance.IsHapticsEnabled ? "HAPTICS:  ON" : "HAPTICS:  OFF";
+                bool on = PolyFuse.Juice.HapticFeedbackManager.Instance.IsHapticsEnabled;
+                _hapticsOptionText.text = on ? "HAPTICS:  <color=#10B981>ON</color>" : "HAPTICS:  <color=#64748B>OFF</color>";
             }
         }
 

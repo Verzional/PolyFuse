@@ -173,18 +173,39 @@ namespace PolyFuse.Interaction
             return sum / _shape.relativeOffsets.Length;
         }
 
+        public static DraggablePiece ActivePiece { get; private set; }
+        private static readonly List<DraggablePiece> _allPieces = new List<DraggablePiece>();
+
+        private void OnEnable()
+        {
+            if (!_allPieces.Contains(this))
+            {
+                _allPieces.Add(this);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _allPieces.Remove(this);
+            if (ActivePiece == this)
+            {
+                ActivePiece = null;
+            }
+        }
+
         private void Update()
         {
-            if (!_isDragging && InputHelper.IsPointerDown())
+            if (ActivePiece == null && !_isDragging && InputHelper.IsPointerDown())
             {
                 Vector3 pointerWorld = GetPointerWorldPosition();
-                if (Vector2.Distance(pointerWorld, transform.position) < 1.6f)
+                float dist = Vector2.Distance(pointerWorld, transform.position);
+                if (dist < 1.75f && IsClosestActivePiece(pointerWorld, dist))
                 {
                     StartDragging();
                 }
             }
 
-            if (_isDragging)
+            if (ActivePiece == this && _isDragging)
             {
                 if (InputHelper.IsPointerHeld())
                 {
@@ -198,6 +219,33 @@ namespace PolyFuse.Interaction
                     EndDragging();
                 }
             }
+            else if (_isDragging && ActivePiece != this)
+            {
+                _isDragging = false;
+                if (_board != null)
+                {
+                    _board.ClearGhostPreviews();
+                    _board.ClearAnticipationGlow();
+                }
+                _returnAnim = StartCoroutine(ReturnToSlot());
+            }
+        }
+
+        private bool IsClosestActivePiece(Vector3 pointerPos, float myDist)
+        {
+            for (int i = 0; i < _allPieces.Count; i++)
+            {
+                DraggablePiece other = _allPieces[i];
+                if (other != null && other != this && other.gameObject.activeInHierarchy)
+                {
+                    float otherDist = Vector2.Distance(pointerPos, other.transform.position);
+                    if (otherDist < myDist)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         private Vector3 GetPointerWorldPosition()
@@ -213,6 +261,9 @@ namespace PolyFuse.Interaction
 
         private void StartDragging()
         {
+            if (ActivePiece != null && ActivePiece != this) return;
+            ActivePiece = this;
+
             if (_returnAnim != null) StopCoroutine(_returnAnim);
             _isDragging = true;
             SetDisabled(false); // Instantly restore 100% saturation and brightness on touch
@@ -221,6 +272,10 @@ namespace PolyFuse.Interaction
 
         private void EndDragging()
         {
+            if (ActivePiece == this)
+            {
+                ActivePiece = null;
+            }
             _isDragging = false;
             if (_board != null)
             {
@@ -303,6 +358,12 @@ namespace PolyFuse.Interaction
 
         private void OnDisable()
         {
+            _allPieces.Remove(this);
+            if (ActivePiece == this)
+            {
+                ActivePiece = null;
+            }
+
             if (_returnAnim != null)
             {
                 StopCoroutine(_returnAnim);
