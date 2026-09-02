@@ -387,7 +387,7 @@ namespace PolyFuse.Gameplay
 
             if (_ui != null)
             {
-                _ui.ShowGameOver(_greedEngine.CurrentScore);
+                _ui.ShowGameOver(_greedEngine.CurrentScore, _greedEngine.MaxComboStreakInRun, _greedEngine.LinesClearedInRun, _greedEngine.PiecesPlacedInRun);
             }
         }
     }

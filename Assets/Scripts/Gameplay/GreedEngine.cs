@@ -24,6 +24,11 @@ namespace PolyFuse.Gameplay
         [SerializeField] private int _graceRemaining;
         [SerializeField] private int _currentGraceCapacity = 3;
 
+        [Header("Run Stats")]
+        [SerializeField] private int _linesClearedInRun;
+        [SerializeField] private int _maxComboStreakInRun;
+        [SerializeField] private int _piecesPlacedInRun;
+
         private const string HighScoreKey = "PolyFuse_HighScore";
         private int _startingHighScore;
         private bool _hasTriggeredNewHighScoreInRun;
@@ -33,6 +38,9 @@ namespace PolyFuse.Gameplay
         public int ComboStreak => _comboStreak;
         public int GraceRemaining => _graceRemaining;
         public int CurrentGraceCapacity => _currentGraceCapacity;
+        public int LinesClearedInRun => _linesClearedInRun;
+        public int MaxComboStreakInRun => _maxComboStreakInRun;
+        public int PiecesPlacedInRun => _piecesPlacedInRun;
         public int MaxGraceTurns => _comboGraceTurns;
         public int MultiLineGraceTurns => _multiLineGraceTurns;
         public int BoardWipeGraceTurns => _multiLineGraceTurns;
@@ -56,6 +64,9 @@ namespace PolyFuse.Gameplay
             _comboStreak = 0;
             _graceRemaining = 0;
             _currentGraceCapacity = _comboGraceTurns;
+            _linesClearedInRun = 0;
+            _maxComboStreakInRun = 0;
+            _piecesPlacedInRun = 0;
             _startingHighScore = _highScore;
             _hasTriggeredNewHighScoreInRun = false;
             OnScoreChanged?.Invoke(_currentScore, 0);
@@ -64,6 +75,7 @@ namespace PolyFuse.Gameplay
 
         public void RecordPiecePlacement(int unitCount)
         {
+            _piecesPlacedInRun++;
             int mult = Mathf.Max(1, _comboStreak);
             int gained = unitCount * _pointsPerUnitPlaced * mult;
             AddScore(gained);
@@ -76,7 +88,9 @@ namespace PolyFuse.Gameplay
             if (clearResult.HasAnyClear)
             {
                 // Line clear triggered: Increment streak
+                _linesClearedInRun += clearResult.TotalLines;
                 _comboStreak++;
+                _maxComboStreakInRun = Mathf.Max(_maxComboStreakInRun, _comboStreak);
                 int mult = Mathf.Max(1, _comboStreak);
 
                 // Multi-line clears (>= 2 lines) or Board Wipe gets extended grace buffer (5 turns)
