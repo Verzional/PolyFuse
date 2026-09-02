@@ -19,6 +19,7 @@ namespace PolyFuse.UI
         [Header("Game Over Overlay")]
         [SerializeField] private GameObject _gameOverPanel;
         [SerializeField] private Text _finalScoreText;
+        [SerializeField] private Text _finalScoreBestText;
         [SerializeField] private Button _restartButton;
 
         [Header("Settings & Celebrations")]
@@ -40,7 +41,6 @@ namespace PolyFuse.UI
         private RectTransform _popupRt;
         private RectTransform _celebrationRt;
         private Rect _lastSafeArea;
-        private int _maxGraceInStreak = 3;
 
         public event Action OnRestartRequested;
 
@@ -388,6 +388,49 @@ namespace PolyFuse.UI
             return _gearSprite;
         }
 
+        private static Sprite _vignetteSprite;
+
+        public static Sprite GetVignetteSprite()
+        {
+            if (_vignetteSprite != null) return _vignetteSprite;
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            Color[] cols = new Color[size * size];
+
+            float center = (size - 1) * 0.5f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x - center) / center;
+                    float dy = (y - center) / center;
+                    float distSq = dx * dx + dy * dy; // 0 at center, 1 at edge, 2 at corners
+
+                    // Keep inner 60% radius completely crystal clear (alpha = 0)
+                    float alpha = 0f;
+                    if (distSq > 0.55f)
+                    {
+                        float t = (distSq - 0.55f) / 1.45f;
+                        alpha = Mathf.Clamp01(t * t * t); // Ultra-smooth cubic edge falloff
+                    }
+
+                    cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(cols);
+            tex.Apply();
+            _vignetteSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _vignetteSprite;
+        }
+
+        private Image _dangerVignette;
+        private Coroutine _dangerVignetteCoroutine;
+
         private void EnsureUIHierarchy()
         {
             if (_scoreText != null) return;
@@ -410,6 +453,19 @@ namespace PolyFuse.UI
 
             canvasObj.AddComponent<GraphicRaycaster>();
             transform.SetParent(canvasObj.transform, false);
+
+            // 0. Ambient Danger Vignette Overlay (Screen edges, non-blocking)
+            GameObject vigObj = new GameObject("DangerVignette");
+            vigObj.transform.SetParent(canvas.transform, false);
+            _dangerVignette = vigObj.AddComponent<Image>();
+            _dangerVignette.sprite = GetVignetteSprite();
+            _dangerVignette.color = new Color(1.0f, 0.12f, 0.28f, 0f);
+            _dangerVignette.raycastTarget = false;
+            RectTransform vigRt = vigObj.GetComponent<RectTransform>();
+            vigRt.anchorMin = Vector2.zero;
+            vigRt.anchorMax = Vector2.one;
+            vigRt.sizeDelta = Vector2.zero;
+            vigObj.SetActive(false);
 
             Font font = GetSystemFont();
 
@@ -508,7 +564,7 @@ namespace PolyFuse.UI
             ctRt.anchorMax = Vector2.one;
             ctRt.sizeDelta = Vector2.zero;
 
-            // 4. Game Over Panel
+            // 4. Direction 1: Arcade Glass Card (Game Over Screen)
             _gameOverPanel = new GameObject("GameOverPanel");
             _gameOverPanel.transform.SetParent(canvas.transform, false);
             RectTransform goRt = _gameOverPanel.AddComponent<RectTransform>();
@@ -517,66 +573,155 @@ namespace PolyFuse.UI
             goRt.sizeDelta = Vector2.zero;
 
             Image goBg = _gameOverPanel.AddComponent<Image>();
-            goBg.color = new Color(0.04f, 0.05f, 0.08f, 0.94f);
+            goBg.color = new Color(0.02f, 0.03f, 0.06f, 0.95f); // Deep dark obsidian veil
 
-            // Content Box (Dark Obsidian Glass Card)
-            GameObject contentBox = new GameObject("ContentBox");
-            contentBox.transform.SetParent(_gameOverPanel.transform, false);
-            RectTransform cRt = contentBox.AddComponent<RectTransform>();
-            cRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cRt.pivot = new Vector2(0.5f, 0.5f);
-            cRt.sizeDelta = new Vector2(560f, 480f);
+            // Central Floating Glass Card
+            GameObject cardObj = new GameObject("GameOverCard");
+            cardObj.transform.SetParent(_gameOverPanel.transform, false);
+            RectTransform cardRt = cardObj.AddComponent<RectTransform>();
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.pivot = new Vector2(0.5f, 0.5f);
+            cardRt.sizeDelta = new Vector2(600f, 580f);
 
-            Image cbBg = contentBox.AddComponent<Image>();
-            cbBg.color = new Color(0.08f, 0.10f, 0.16f, 0.96f);
-            AddOutline(contentBox, new Color(0.96f, 0.35f, 0.45f, 0.45f), new Vector2(1.5f, -1.5f));
-            AddShadow(contentBox, new Color(0f, 0f, 0f, 0.75f), new Vector2(6f, -6f));
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.sprite = GetSubtleButtonSprite();
+            cardBg.type = Image.Type.Sliced;
+            cardBg.color = new Color(0.08f, 0.11f, 0.18f, 0.96f); // Dark obsidian slate glass
+            AddOutline(cardObj, new Color(0.20f, 0.35f, 0.55f, 0.50f), new Vector2(1.5f, -1.5f));
+            AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
 
-            // Title
+            VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
+            cardLayout.padding = new RectOffset(40, 40, 44, 44);
+            cardLayout.spacing = 22f;
+            cardLayout.childAlignment = TextAnchor.UpperCenter;
+            cardLayout.childControlWidth = true;
+            cardLayout.childControlHeight = false;
+            cardLayout.childForceExpandWidth = true;
+            cardLayout.childForceExpandHeight = false;
+
+            // 1. Card Header Title ("GAME OVER")
             GameObject titleObj = new GameObject("GameOverTitle");
-            titleObj.transform.SetParent(contentBox.transform, false);
+            titleObj.transform.SetParent(cardObj.transform, false);
             Text titleText = titleObj.AddComponent<Text>();
             titleText.font = font;
-            titleText.raycastTarget = false;
             titleText.text = "GAME OVER";
-            titleText.fontSize = 46;
+            titleText.fontSize = 40;
             titleText.fontStyle = FontStyle.Bold;
             titleText.alignment = TextAnchor.MiddleCenter;
-            titleText.color = new Color(0.96f, 0.35f, 0.45f, 1f);
-            AddOutline(titleObj, new Color(0.04f, 0.06f, 0.10f, 0.90f), new Vector2(2f, -2f));
-            RectTransform tRt = titleObj.GetComponent<RectTransform>();
-            tRt.anchorMin = new Vector2(0f, 0.68f);
-            tRt.anchorMax = new Vector2(1f, 0.95f);
-            tRt.sizeDelta = Vector2.zero;
+            titleText.color = Color.white;
+            titleText.raycastTarget = false;
+            AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
+            LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
+            tLe.minHeight = 44f;
+            tLe.preferredHeight = 44f;
 
-            // Final Score
+            // 2. Score Readout Section (Floating inside card)
+            GameObject scoreSection = new GameObject("ScoreSection");
+            scoreSection.transform.SetParent(cardObj.transform, false);
+            RectTransform ssRt = scoreSection.AddComponent<RectTransform>();
+            ssRt.sizeDelta = new Vector2(520f, 130f);
+            LayoutElement ssLe = scoreSection.AddComponent<LayoutElement>();
+            ssLe.minHeight = 130f;
+            ssLe.preferredHeight = 130f;
+
+            VerticalLayoutGroup ssVlg = scoreSection.AddComponent<VerticalLayoutGroup>();
+            ssVlg.padding = new RectOffset(0, 0, 0, 0);
+            ssVlg.spacing = 2f;
+            ssVlg.childAlignment = TextAnchor.MiddleCenter;
+            ssVlg.childControlWidth = true;
+            ssVlg.childControlHeight = true;
+            ssVlg.childForceExpandWidth = true;
+            ssVlg.childForceExpandHeight = false;
+
+            // Header Label ("FINAL SCORE")
+            GameObject scLblObj = new GameObject("ScoreLabel");
+            scLblObj.transform.SetParent(scoreSection.transform, false);
+            Text scLbl = scLblObj.AddComponent<Text>();
+            scLbl.font = font;
+            scLbl.text = "FINAL SCORE";
+            scLbl.fontSize = 18;
+            scLbl.fontStyle = FontStyle.Bold;
+            scLbl.alignment = TextAnchor.MiddleCenter;
+            scLbl.color = new Color(0.60f, 0.68f, 0.78f, 1.0f);
+            scLbl.raycastTarget = false;
+            LayoutElement sclLe = scLblObj.AddComponent<LayoutElement>();
+            sclLe.minHeight = 22f;
+            sclLe.preferredHeight = 22f;
+
+            // Final Score Digits (Huge 78px Bold White Digits)
             GameObject finalScoreObj = new GameObject("FinalScoreText");
-            finalScoreObj.transform.SetParent(contentBox.transform, false);
+            finalScoreObj.transform.SetParent(scoreSection.transform, false);
             _finalScoreText = finalScoreObj.AddComponent<Text>();
             _finalScoreText.font = font;
             _finalScoreText.raycastTarget = false;
-            _finalScoreText.text = "SCORE\n0";
-            _finalScoreText.fontSize = 40;
+            _finalScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _finalScoreText.verticalOverflow = VerticalWrapMode.Overflow;
+            _finalScoreText.text = "0";
+            _finalScoreText.fontSize = 78;
             _finalScoreText.fontStyle = FontStyle.Bold;
             _finalScoreText.alignment = TextAnchor.MiddleCenter;
             _finalScoreText.color = Color.white;
-            AddOutline(finalScoreObj, new Color(0.04f, 0.06f, 0.10f, 0.90f), new Vector2(1.5f, -1.5f));
-            RectTransform fsRt = finalScoreObj.GetComponent<RectTransform>();
-            fsRt.anchorMin = new Vector2(0f, 0.32f);
-            fsRt.anchorMax = new Vector2(1f, 0.68f);
-            fsRt.sizeDelta = Vector2.zero;
+            AddOutline(finalScoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2.5f, -2.5f));
+            AddShadow(finalScoreObj, new Color(0f, 0f, 0f, 0.75f), new Vector2(3f, -3f));
+            LayoutElement fsLe = finalScoreObj.AddComponent<LayoutElement>();
+            fsLe.minHeight = 84f;
+            fsLe.preferredHeight = 84f;
 
-            // Restart Button (Electric Cyan)
-            GameObject btnObj = new GameObject("RestartButton");
-            btnObj.transform.SetParent(contentBox.transform, false);
+            // 3. Best Score Pill Inset (520 x 74)
+            GameObject bestPillObj = new GameObject("BestPill");
+            bestPillObj.transform.SetParent(cardObj.transform, false);
+            RectTransform bpRt = bestPillObj.AddComponent<RectTransform>();
+            bpRt.sizeDelta = new Vector2(520f, 74f);
+            LayoutElement bpLe = bestPillObj.AddComponent<LayoutElement>();
+            bpLe.minHeight = 74f;
+            bpLe.preferredHeight = 74f;
+
+            Image bpImg = bestPillObj.AddComponent<Image>();
+            bpImg.sprite = GetSubtleButtonSprite();
+            bpImg.type = Image.Type.Sliced;
+            bpImg.color = new Color(0.05f, 0.07f, 0.12f, 0.90f); // Dark inset glass
+            AddOutline(bestPillObj, new Color(0.18f, 0.28f, 0.40f, 0.45f), new Vector2(1.5f, -1.5f));
+
+            GameObject bestTextObj = new GameObject("BestScoreText");
+            bestTextObj.transform.SetParent(bestPillObj.transform, false);
+            _finalScoreBestText = bestTextObj.AddComponent<Text>();
+            _finalScoreBestText.font = font;
+            _finalScoreBestText.supportRichText = true;
+            _finalScoreBestText.raycastTarget = false;
+            _finalScoreBestText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _finalScoreBestText.verticalOverflow = VerticalWrapMode.Overflow;
+            _finalScoreBestText.text = "★  BEST  0";
+            _finalScoreBestText.fontSize = 24;
+            _finalScoreBestText.fontStyle = FontStyle.Bold;
+            _finalScoreBestText.alignment = TextAnchor.MiddleCenter;
+            _finalScoreBestText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
+            RectTransform btRt = bestTextObj.GetComponent<RectTransform>();
+            btRt.anchorMin = Vector2.zero;
+            btRt.anchorMax = Vector2.one;
+            btRt.sizeDelta = Vector2.zero;
+
+            // 4. Play Again Hero Button (520 x 88)
+            GameObject btnObj = new GameObject("PlayAgainButton");
+            btnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform btnRt = btnObj.AddComponent<RectTransform>();
+            btnRt.sizeDelta = new Vector2(520f, 88f);
+            LayoutElement btnLe = btnObj.AddComponent<LayoutElement>();
+            btnLe.minHeight = 88f;
+            btnLe.preferredHeight = 88f;
+
             Image btnImg = btnObj.AddComponent<Image>();
-            btnImg.color = new Color(0.15f, 0.82f, 0.98f, 1f);
+            btnImg.sprite = GetSubtleButtonSprite();
+            btnImg.type = Image.Type.Sliced;
+            btnImg.color = new Color(0.00f, 0.90f, 1.0f, 1.0f);
+            AddOutline(btnObj, new Color(0.00f, 0.90f, 1.0f, 0.50f), new Vector2(1.5f, -1.5f));
+
             _restartButton = btnObj.AddComponent<Button>();
-            RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-            btnRt.anchorMin = new Vector2(0.12f, 0.08f);
-            btnRt.anchorMax = new Vector2(0.88f, 0.26f);
-            btnRt.sizeDelta = Vector2.zero;
+            _restartButton.onClick.AddListener(() =>
+            {
+                HideGameOver();
+                OnRestartRequested?.Invoke();
+            });
 
             GameObject btnLabelObj = new GameObject("BtnLabel");
             btnLabelObj.transform.SetParent(btnObj.transform, false);
@@ -592,6 +737,8 @@ namespace PolyFuse.UI
             blRt.anchorMin = Vector2.zero;
             blRt.anchorMax = Vector2.one;
             blRt.sizeDelta = Vector2.zero;
+
+            _gameOverPanel.SetActive(false);
 
             // 5. Top-Right Floating Settings Gear Button (Naked icon, no outer box)
             GameObject setBtnObj = new GameObject("SettingsButton");
@@ -747,19 +894,16 @@ namespace PolyFuse.UI
             _scorePunchCoroutine = null;
         }
 
-        public void UpdateComboState(int comboStreak, int graceRemaining, float pitch)
+        public void UpdateComboState(int comboStreak, int graceRemaining, int graceCapacity, float pitch)
         {
             if (comboStreak <= 0)
             {
-                _maxGraceInStreak = 3;
                 if (_comboCanvasGroup != null && _comboCanvasGroup.alpha > 0f)
                 {
                     StartCoroutine(FadeOutCombo());
                 }
                 return;
             }
-
-            _maxGraceInStreak = Mathf.Max(_maxGraceInStreak, graceRemaining);
 
             if (_comboText != null)
             {
@@ -772,7 +916,7 @@ namespace PolyFuse.UI
                 else if (comboStreak == 6) hypeColor = new Color(0.02f, 0.71f, 0.83f, 1.0f); // Electric Cyan
                 else hypeColor = new Color(0.66f, 0.33f, 0.97f, 1.0f); // Prismatic Purple
 
-                int totalPips = Mathf.Max(3, _maxGraceInStreak);
+                int totalPips = Mathf.Max(3, graceCapacity);
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
                 // Format: e.g. "‹ 3× ›   ▲  ▲  ▲   ‹ 3× ›"
@@ -862,8 +1006,28 @@ namespace PolyFuse.UI
             }
             if (_finalScoreText != null)
             {
-                _finalScoreText.text = $"SCORE\n{finalScore:N0}";
+                _finalScoreText.text = finalScore.ToString("N0");
             }
+            if (_finalScoreBestText != null)
+            {
+                int highScore = PlayerPrefs.GetInt("PolyFuse_HighScore", finalScore);
+                if (finalScore >= highScore && finalScore > 0)
+                {
+                    _finalScoreBestText.text = "★  NEW BEST RECORD!  ★";
+                    _finalScoreBestText.color = new Color(1.0f, 0.85f, 0.20f, 1.0f);
+                }
+                else
+                {
+                    _finalScoreBestText.text = $"★  BEST  {highScore:N0}";
+                    _finalScoreBestText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
+                }
+            }
+
+            // Hide Top HUD during Game Over to eliminate duplicate score competition
+            if (_scoreRt != null) _scoreRt.gameObject.SetActive(false);
+            if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(false);
+            if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(false);
+            if (_comboRt != null) _comboRt.gameObject.SetActive(false);
         }
 
         public void HideGameOver()
@@ -872,6 +1036,11 @@ namespace PolyFuse.UI
             {
                 _gameOverPanel.SetActive(false);
             }
+
+            // Restore Top HUD
+            if (_scoreRt != null) _scoreRt.gameObject.SetActive(true);
+            if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(true);
+            if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(true);
         }
 
         private Text _soundOptionText;
@@ -1048,6 +1217,64 @@ namespace PolyFuse.UI
                 _settingsModalPanel.SetActive(false);
             }
             Time.timeScale = 1.0f;
+        }
+
+        public void SetDangerState(bool inDanger)
+        {
+            if (_dangerVignetteCoroutine != null) StopCoroutine(_dangerVignetteCoroutine);
+            _dangerVignetteCoroutine = StartCoroutine(AnimateDangerVignette(inDanger));
+        }
+
+        private IEnumerator AnimateDangerVignette(bool inDanger)
+        {
+            if (_dangerVignette == null) yield break;
+
+            if (inDanger)
+            {
+                Color baseCrimson = new Color(0.95f, 0.15f, 0.28f, 1.0f);
+                _dangerVignette.gameObject.SetActive(true);
+
+                while (true)
+                {
+                    float cycle = Time.time % 0.96f; // Exactly synchronized with ProceduralAudio 62.5 BPM heartbeat
+                    float pulseAlpha = 0.0f;
+
+                    if (cycle < 0.20f)
+                    {
+                        float t1 = cycle / 0.20f;
+                        pulseAlpha = Mathf.Lerp(0.0f, 0.10f, Mathf.Sin(t1 * Mathf.PI));
+                    }
+                    else if (cycle >= 0.25f && cycle < 0.46f)
+                    {
+                        float t2 = (cycle - 0.25f) / 0.21f;
+                        pulseAlpha = Mathf.Lerp(0.0f, 0.16f, Mathf.Sin(t2 * Mathf.PI));
+                    }
+
+                    _dangerVignette.color = new Color(baseCrimson.r, baseCrimson.g, baseCrimson.b, pulseAlpha);
+                    yield return null;
+                }
+            }
+            else
+            {
+                if (!_dangerVignette.gameObject.activeSelf) yield break;
+
+                // Subtle Heroic Escape Flash: Soft Cyan glow and swift fade out
+                Color cyanFlash = new Color(0.0f, 0.95f, 1.0f, 0.22f);
+                _dangerVignette.color = cyanFlash;
+
+                float dur = 0.35f;
+                float elapsed = 0f;
+                while (elapsed < dur)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsed / dur);
+                    _dangerVignette.color = Color.Lerp(cyanFlash, new Color(0f, 0.95f, 1.0f, 0f), t);
+                    yield return null;
+                }
+
+                _dangerVignette.gameObject.SetActive(false);
+                _dangerVignetteCoroutine = null;
+            }
         }
 
         public void ShowCloseCallBanner()
