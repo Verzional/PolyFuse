@@ -80,9 +80,10 @@ Board clearing is evaluated across all 3 isometric grid axes:
   * **3 Lines Clear (The Trifecta):** $10,000 \times \max(1, \text{ComboStreak})$.
   * **4+ Lines Clear (Super Nova):** $25,000 \times \max(1, \text{ComboStreak})$.
   * **Board Wipe Jackpot:** $+25,000 \times \max(1, \text{ComboStreak})$ bonus points.
-* **Multi-Line Cleave & Winner's Curse Grace Buffer:**
+* **Multi-Line Cleave & Board Wipe Grace Buffer:**
   * Standard 1-line clears grant a **3-turn grace buffer** (`▲ ▲ ▲`).
-  * Achieving a **Multi-Line Clear** ($\ge 2$ lines: Double Cleave, Trifecta, Super Nova) or a full **Board Wipe** grants an extended **5-turn grace buffer** (`▲ ▲ ▲ ▲ ▲`), rewarding strategic setups with a spacious runway to place pieces and bridge toward the next clear without breaking combo momentum.
+  * Achieving a **Multi-Line Clear** ($\ge 2$ lines: Double Cleave, Trifecta, Super Nova) grants an extended **5-turn grace buffer** (`▲ ▲ ▲ ▲ ▲`).
+  * Achieving a full **Board Wipe** grants an ultimate **7-turn grace buffer** (`▲ ▲ ▲ ▲ ▲ ▲ ▲`), completely eliminating the winner's curse and providing a spacious 7-piece runway to build momentum on a blank canvas.
 * **Live Run Statistics Tracking:**
   * Tracks live session metrics: **Max Combo Streak**, **Total Lines Cleared**, and **Total Pieces Placed**.
 * **Escalating Combo Hype Tiers:**

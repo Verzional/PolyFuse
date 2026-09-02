@@ -15,7 +15,8 @@ namespace PolyFuse.Gameplay
 
         [Header("Combo Tuning")]
         [SerializeField] private int _comboGraceTurns = 3; // Standard single-line combo grace buffer (3 pieces)
-        [SerializeField] private int _multiLineGraceTurns = 5; // Extended grace buffer on multi-line clears (>= 2 lines) or board wipe
+        [SerializeField] private int _multiLineGraceTurns = 5; // Extended grace buffer on multi-line clears (>= 2 lines)
+        [SerializeField] private int _boardWipeGraceTurns = 7; // Extended 7-turn grace buffer on full board wipe
 
         [Header("Live State")]
         [SerializeField] private int _currentScore;
@@ -43,7 +44,7 @@ namespace PolyFuse.Gameplay
         public int PiecesPlacedInRun => _piecesPlacedInRun;
         public int MaxGraceTurns => _comboGraceTurns;
         public int MultiLineGraceTurns => _multiLineGraceTurns;
-        public int BoardWipeGraceTurns => _multiLineGraceTurns;
+        public int BoardWipeGraceTurns => _boardWipeGraceTurns;
         public float AudioPitchMultiplier => 1.0f + (_comboStreak * 0.12f);
         public int Multiplier => Mathf.Max(1, _comboStreak);
 
@@ -93,8 +94,14 @@ namespace PolyFuse.Gameplay
                 _maxComboStreakInRun = Mathf.Max(_maxComboStreakInRun, _comboStreak);
                 int mult = Mathf.Max(1, _comboStreak);
 
-                // Multi-line clears (>= 2 lines) or Board Wipe gets extended grace buffer (5 turns)
-                if (clearResult.TotalLines >= 2 || isBoardCompletelyEmpty)
+                // Grace Buffer Determination:
+                // Board Wipe: 7 turns | Multi-Line (>= 2 lines): 5 turns | Single Line: 3 turns
+                if (isBoardCompletelyEmpty)
+                {
+                    _currentGraceCapacity = _boardWipeGraceTurns;
+                    _graceRemaining = _boardWipeGraceTurns;
+                }
+                else if (clearResult.TotalLines >= 2)
                 {
                     _currentGraceCapacity = _multiLineGraceTurns;
                     _graceRemaining = _multiLineGraceTurns;
