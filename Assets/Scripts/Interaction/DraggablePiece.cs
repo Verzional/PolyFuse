@@ -207,9 +207,6 @@ namespace PolyFuse.Interaction
 
             if (ActivePiece == null && !_isDragging && InputHelper.IsPointerDown())
             {
-                // Prevent dragging if tapping on UI buttons / modals
-                if (InputHelper.IsPointerOverUI()) return;
-
                 Vector3 pointerWorld = GetPointerWorldPosition();
                 float dist = Vector2.Distance(pointerWorld, transform.position);
                 if (dist < 1.75f && IsClosestActivePiece(pointerWorld, dist))
