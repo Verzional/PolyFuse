@@ -66,5 +66,11 @@ namespace PolyFuse.Interaction
             return Vector2.zero;
 #endif
         }
+
+        public static bool IsPointerOverUI()
+        {
+            if (UnityEngine.EventSystems.EventSystem.current == null) return false;
+            return UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+        }
     }
 }

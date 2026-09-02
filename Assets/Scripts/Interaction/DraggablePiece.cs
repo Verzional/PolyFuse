@@ -195,8 +195,21 @@ namespace PolyFuse.Interaction
 
         private void Update()
         {
+            // If Game Over or game is paused, cancel any active drag and ignore new drags
+            if (Time.timeScale == 0f || (PolyFuse.Gameplay.GameManager.Instance != null && PolyFuse.Gameplay.GameManager.Instance.IsGameOver))
+            {
+                if (_isDragging)
+                {
+                    EndDragging();
+                }
+                return;
+            }
+
             if (ActivePiece == null && !_isDragging && InputHelper.IsPointerDown())
             {
+                // Prevent dragging if tapping on UI buttons / modals
+                if (InputHelper.IsPointerOverUI()) return;
+
                 Vector3 pointerWorld = GetPointerWorldPosition();
                 float dist = Vector2.Distance(pointerWorld, transform.position);
                 if (dist < 1.75f && IsClosestActivePiece(pointerWorld, dist))

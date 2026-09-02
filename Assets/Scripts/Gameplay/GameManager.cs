@@ -30,6 +30,8 @@ namespace PolyFuse.Gameplay
         private bool _isGameOver;
         private bool _inDangerMode;
 
+        public bool IsGameOver => _isGameOver;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoBootstrapOnPlay()
         {
