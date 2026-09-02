@@ -81,8 +81,10 @@ Board clearing is evaluated across all 3 isometric grid axes:
   * **4+ Lines Clear (Super Nova):** $25,000 \times \max(1, \text{ComboStreak})$.
   * **Board Wipe Jackpot:** $+25,000 \times \max(1, \text{ComboStreak})$ bonus points.
 * **Multi-Line Cleave & Winner's Curse Grace Buffer:**
-  * Standard 1-line clears grant a **3-turn grace buffer** (`● ● ● ○ ○`).
-  * Achieving a **Multi-Line Clear** ($\ge 2$ lines: Double Cleave, Trifecta, Super Nova) or a full **Board Wipe** grants an extended **5-turn grace buffer** (`● ● ● ● ●`), rewarding strategic setups with a spacious runway to place pieces and bridge toward the next clear without breaking combo momentum.
+  * Standard 1-line clears grant a **3-turn grace buffer** (`▲ ▲ ▲`).
+  * Achieving a **Multi-Line Clear** ($\ge 2$ lines: Double Cleave, Trifecta, Super Nova) or a full **Board Wipe** grants an extended **5-turn grace buffer** (`▲ ▲ ▲ ▲ ▲`), rewarding strategic setups with a spacious runway to place pieces and bridge toward the next clear without breaking combo momentum.
+* **Live Run Statistics Tracking:**
+  * Tracks live session metrics: **Max Combo Streak**, **Total Lines Cleared**, and **Total Pieces Placed**.
 * **Escalating Combo Hype Tiers:**
   * $2\times$: `COMBO ×2!` *(Warm Gold)*
   * $3\times$: `GREAT! ×3` *(Electric Amber)*
@@ -130,24 +132,33 @@ $$\text{Position.y} = (\text{row} - \text{Radius}) \times \text{Height} + (\text
 | **Piece Snap** | Elastic squash-and-stretch pop ($1.18\times \to 0.92\times \to 1.0\times$). | Crisp wooden/marble click. | Light Haptic pulse (`16ms`). |
 | **Line Clear** | Glowing triangle particle shatter burst + white flash. | Ascending Pentatonic Scale note ($C_4 \to D_4 \to E_4 \dots$). | Medium Haptic tick (`38ms`). |
 | **Multi-Line Clear** | Screen shake + Axis laser cleave. | Layered crystal arpeggio + sub-bass boom. | Heavy Haptic buzz (`65ms`) + Hit-Stop ($0.06\text{s}$). |
-| **Danger Mode ($\ge 65\%$)** | Screen edge crimson pulse vignette. | Rhythmic 62 BPM "lub-dub" harmonic heartbeat loop. | Escalating turn-by-turn tension. |
-| **Close Call Escape** | "HEROIC CLEAR!" pop banner + confetti burst. | Triumphant brass major triad fanfare. | Massive adrenaline relief. |
+| **Score Gain** | Smooth cubic ease-out roll-up ticker ($0.20\text{s} - 0.32\text{s}$) + score punch. | Ascending score tick audio. | Rhythmic score feel. |
+| **Danger Mode ($\ge 65\%$)** | Screen edge crimson pulse vignette + outer coral halo pulse. | Rhythmic 62.5 BPM "lub-dub" harmonic heartbeat loop. | Escalating turn-by-turn tension. |
+| **Close Call Escape** | "HEROIC CLEAR!" pop banner + cyan flash surge + confetti burst. | Triumphant brass major triad fanfare. | Massive adrenaline relief. |
 | **New High Score** | "★ NEW BEST! ★" golden badge pop + 24-shard starburst. | Sparkling D-major chime arpeggio fanfare. | Golden HUD celebration. |
 | **Invalid Drop** | Elastic spring return with cubic overshoot ($+9.4\%$). | Subtle soft thud. | Bouncy tray recovery. |
 | **Board Wipe** | Fullscreen celebration banner + starburst. | Victorious major triad fanfare. | Heavy double shake. |
 
 ---
 
-## 6. Retention Architecture & Quality of Life
+## 6. Retention Architecture & UI Modals
 
 * **Dynamic Danger Loop:**
-  * When board fill reaches $\ge 65\%$ (approx. 35 tiles occupied out of 54), Danger Mode initiates with a pulsing heartbeat loop.
+  * When board fill reaches $\ge 65\%$ (approx. 35 tiles occupied out of 54), Danger Mode initiates with a pulsing heartbeat loop and radial edge vignette.
   * Clearing lines down below $50\%$ triggers the **"HEROIC CLEAR!"** escape reward banner and fanfare.
 * **Live High Score Chase:**
-  * Tracks high score in real-time, triggering a mid-game golden starburst explosion the moment the player sets a new personal record.
-* **Pause & Settings Modal:**
+  * Tracks high score in real-time, triggering a mid-game golden starburst explosion the moment the player sets a personal record.
+* **Minimalist Pause & Settings Modal:**
   * Procedurally generated anti-aliased gear icon in top-right HUD.
+  * Floating, borderless vertical list (`PAUSED`) with $520\times 84\text{px}$ dark glass option pills.
   * Toggles for Procedural Sound FX and Haptics with `PlayerPrefs` cross-session persistence.
-  * Instant run restart and game resume with timescale freezing.
+  * Smooth $0.16\text{s}$ ease-out scale and alpha transition.
+* **Arcade Glass Card Game Over Modal:**
+  * Dedicated floating dark obsidian glass card ($600\times 600\text{px}$).
+  * Huge $74\text{px}$ bold white DIN score digits.
+  * **Run Stats Breakdown Bar:** 3-cell inset displaying **MAX COMBO**, **LINES**, and **PIECES**.
+  * Gold high score pill comparison (`★ BEST: X,XXX` or `★ NEW BEST RECORD! ★`).
+  * Electric Cyan `▶ PLAY AGAIN` hero action button.
+  * Automatic Top HUD auto-occlusion during Game Over to eliminate duplicate number competition.
 
 ---

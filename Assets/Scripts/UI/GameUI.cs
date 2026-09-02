@@ -20,6 +20,9 @@ namespace PolyFuse.UI
         [SerializeField] private GameObject _gameOverPanel;
         [SerializeField] private Text _finalScoreText;
         [SerializeField] private Text _finalScoreBestText;
+        [SerializeField] private Text _maxComboStatText;
+        [SerializeField] private Text _linesClearedStatText;
+        [SerializeField] private Text _piecesPlacedStatText;
         [SerializeField] private Button _restartButton;
 
         [Header("Settings & Celebrations")]
@@ -30,9 +33,16 @@ namespace PolyFuse.UI
 
         private Font _uiFont;
         private Coroutine _scorePunchCoroutine;
+        private Coroutine _scoreRollUpCoroutine;
         private Coroutine _deltaPopupCoroutine;
         private Coroutine _comboAnimCoroutine;
         private Coroutine _celebrationCoroutine;
+
+        private int _displayedScore = 0;
+        private CanvasGroup _gameOverCanvasGroup;
+        private RectTransform _gameOverCardRt;
+        private CanvasGroup _settingsModalCanvasGroup;
+        private RectTransform _settingsListContainerRt;
 
         private RectTransform _highScoreRt;
         private RectTransform _scoreRt;
@@ -572,17 +582,19 @@ namespace PolyFuse.UI
             goRt.anchorMax = Vector2.one;
             goRt.sizeDelta = Vector2.zero;
 
+            _gameOverCanvasGroup = _gameOverPanel.AddComponent<CanvasGroup>();
+
             Image goBg = _gameOverPanel.AddComponent<Image>();
             goBg.color = new Color(0.02f, 0.03f, 0.06f, 0.95f); // Deep dark obsidian veil
 
             // Central Floating Glass Card
             GameObject cardObj = new GameObject("GameOverCard");
             cardObj.transform.SetParent(_gameOverPanel.transform, false);
-            RectTransform cardRt = cardObj.AddComponent<RectTransform>();
-            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.pivot = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(600f, 580f);
+            _gameOverCardRt = cardObj.AddComponent<RectTransform>();
+            _gameOverCardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            _gameOverCardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            _gameOverCardRt.pivot = new Vector2(0.5f, 0.5f);
+            _gameOverCardRt.sizeDelta = new Vector2(600f, 600f);
 
             Image cardBg = cardObj.AddComponent<Image>();
             cardBg.sprite = GetSubtleButtonSprite();
@@ -592,8 +604,8 @@ namespace PolyFuse.UI
             AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
 
             VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
-            cardLayout.padding = new RectOffset(40, 40, 44, 44);
-            cardLayout.spacing = 22f;
+            cardLayout.padding = new RectOffset(40, 40, 36, 36);
+            cardLayout.spacing = 16f;
             cardLayout.childAlignment = TextAnchor.UpperCenter;
             cardLayout.childControlWidth = true;
             cardLayout.childControlHeight = false;
@@ -620,10 +632,10 @@ namespace PolyFuse.UI
             GameObject scoreSection = new GameObject("ScoreSection");
             scoreSection.transform.SetParent(cardObj.transform, false);
             RectTransform ssRt = scoreSection.AddComponent<RectTransform>();
-            ssRt.sizeDelta = new Vector2(520f, 130f);
+            ssRt.sizeDelta = new Vector2(520f, 118f);
             LayoutElement ssLe = scoreSection.AddComponent<LayoutElement>();
-            ssLe.minHeight = 130f;
-            ssLe.preferredHeight = 130f;
+            ssLe.minHeight = 118f;
+            ssLe.preferredHeight = 118f;
 
             VerticalLayoutGroup ssVlg = scoreSection.AddComponent<VerticalLayoutGroup>();
             ssVlg.padding = new RectOffset(0, 0, 0, 0);
@@ -649,7 +661,7 @@ namespace PolyFuse.UI
             sclLe.minHeight = 22f;
             sclLe.preferredHeight = 22f;
 
-            // Final Score Digits (Huge 78px Bold White Digits)
+            // Final Score Digits (Huge 74px Bold White Digits)
             GameObject finalScoreObj = new GameObject("FinalScoreText");
             finalScoreObj.transform.SetParent(scoreSection.transform, false);
             _finalScoreText = finalScoreObj.AddComponent<Text>();
@@ -658,24 +670,46 @@ namespace PolyFuse.UI
             _finalScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _finalScoreText.verticalOverflow = VerticalWrapMode.Overflow;
             _finalScoreText.text = "0";
-            _finalScoreText.fontSize = 78;
+            _finalScoreText.fontSize = 74;
             _finalScoreText.fontStyle = FontStyle.Bold;
             _finalScoreText.alignment = TextAnchor.MiddleCenter;
             _finalScoreText.color = Color.white;
             AddOutline(finalScoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2.5f, -2.5f));
             AddShadow(finalScoreObj, new Color(0f, 0f, 0f, 0.75f), new Vector2(3f, -3f));
             LayoutElement fsLe = finalScoreObj.AddComponent<LayoutElement>();
-            fsLe.minHeight = 84f;
-            fsLe.preferredHeight = 84f;
+            fsLe.minHeight = 78f;
+            fsLe.preferredHeight = 78f;
 
-            // 3. Best Score Pill Inset (520 x 74)
+            // 3. Run Stats Row (520 x 54)
+            GameObject statsRowObj = new GameObject("RunStatsRow");
+            statsRowObj.transform.SetParent(cardObj.transform, false);
+            RectTransform srRt = statsRowObj.AddComponent<RectTransform>();
+            srRt.sizeDelta = new Vector2(520f, 54f);
+            LayoutElement srLe = statsRowObj.AddComponent<LayoutElement>();
+            srLe.minHeight = 54f;
+            srLe.preferredHeight = 54f;
+
+            HorizontalLayoutGroup srHlg = statsRowObj.AddComponent<HorizontalLayoutGroup>();
+            srHlg.padding = new RectOffset(0, 0, 0, 0);
+            srHlg.spacing = 8f;
+            srHlg.childAlignment = TextAnchor.MiddleCenter;
+            srHlg.childControlWidth = true;
+            srHlg.childControlHeight = true;
+            srHlg.childForceExpandWidth = true;
+            srHlg.childForceExpandHeight = true;
+
+            CreateStatCell(statsRowObj.transform, font, "MAX COMBO", out _maxComboStatText);
+            CreateStatCell(statsRowObj.transform, font, "LINES", out _linesClearedStatText);
+            CreateStatCell(statsRowObj.transform, font, "PIECES", out _piecesPlacedStatText);
+
+            // 4. Best Score Pill Inset (520 x 66)
             GameObject bestPillObj = new GameObject("BestPill");
             bestPillObj.transform.SetParent(cardObj.transform, false);
             RectTransform bpRt = bestPillObj.AddComponent<RectTransform>();
-            bpRt.sizeDelta = new Vector2(520f, 74f);
+            bpRt.sizeDelta = new Vector2(520f, 66f);
             LayoutElement bpLe = bestPillObj.AddComponent<LayoutElement>();
-            bpLe.minHeight = 74f;
-            bpLe.preferredHeight = 74f;
+            bpLe.minHeight = 66f;
+            bpLe.preferredHeight = 66f;
 
             Image bpImg = bestPillObj.AddComponent<Image>();
             bpImg.sprite = GetSubtleButtonSprite();
@@ -691,7 +725,7 @@ namespace PolyFuse.UI
             _finalScoreBestText.raycastTarget = false;
             _finalScoreBestText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _finalScoreBestText.verticalOverflow = VerticalWrapMode.Overflow;
-            _finalScoreBestText.text = "★  BEST  0";
+            _finalScoreBestText.text = "BEST:  ★ 0";
             _finalScoreBestText.fontSize = 24;
             _finalScoreBestText.fontStyle = FontStyle.Bold;
             _finalScoreBestText.alignment = TextAnchor.MiddleCenter;
@@ -701,14 +735,14 @@ namespace PolyFuse.UI
             btRt.anchorMax = Vector2.one;
             btRt.sizeDelta = Vector2.zero;
 
-            // 4. Play Again Hero Button (520 x 88)
+            // 5. Play Again Hero Button (520 x 84)
             GameObject btnObj = new GameObject("PlayAgainButton");
             btnObj.transform.SetParent(cardObj.transform, false);
             RectTransform btnRt = btnObj.AddComponent<RectTransform>();
-            btnRt.sizeDelta = new Vector2(520f, 88f);
+            btnRt.sizeDelta = new Vector2(520f, 84f);
             LayoutElement btnLe = btnObj.AddComponent<LayoutElement>();
-            btnLe.minHeight = 88f;
-            btnLe.preferredHeight = 88f;
+            btnLe.minHeight = 84f;
+            btnLe.preferredHeight = 84f;
 
             Image btnImg = btnObj.AddComponent<Image>();
             btnImg.sprite = GetSubtleButtonSprite();
@@ -822,14 +856,27 @@ namespace PolyFuse.UI
 
         public void UpdateScore(int currentScore, int highScore, int pointsDelta = 0)
         {
+            if (_highScoreText != null)
+            {
+                _highScoreText.text = $"★ {highScore:N0}";
+            }
+
             if (_scoreText != null)
             {
-                _scoreText.text = currentScore.ToString("N0");
-                if (pointsDelta > 0)
+                if (pointsDelta <= 0 || _displayedScore == currentScore)
                 {
+                    if (_scoreRollUpCoroutine != null) StopCoroutine(_scoreRollUpCoroutine);
+                    _displayedScore = currentScore;
+                    _scoreText.text = currentScore.ToString("N0");
+                }
+                else
+                {
+                    if (_scoreRollUpCoroutine != null) StopCoroutine(_scoreRollUpCoroutine);
+                    _scoreRollUpCoroutine = StartCoroutine(RollUpScoreTicker(_displayedScore, currentScore));
+
                     if (_scorePunchCoroutine != null) StopCoroutine(_scorePunchCoroutine);
                     _scorePunchCoroutine = StartCoroutine(PunchScoreText());
-                    
+
                     if (pointsDelta >= 30)
                     {
                         if (_deltaPopupCoroutine != null) StopCoroutine(_deltaPopupCoroutine);
@@ -837,11 +884,26 @@ namespace PolyFuse.UI
                     }
                 }
             }
+        }
 
-            if (_highScoreText != null)
+        private IEnumerator RollUpScoreTicker(int startScore, int targetScore)
+        {
+            float elapsed = 0f;
+            float dur = (targetScore - startScore) > 2000 ? 0.32f : 0.20f;
+
+            while (elapsed < dur)
             {
-                _highScoreText.text = $"★ {highScore:N0}";
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+                float ease = 1.0f - Mathf.Pow(1.0f - t, 3.0f);
+                int current = Mathf.RoundToInt(Mathf.Lerp(startScore, targetScore, ease));
+                _scoreText.text = current.ToString("N0");
+                yield return null;
             }
+
+            _displayedScore = targetScore;
+            _scoreText.text = targetScore.ToString("N0");
+            _scoreRollUpCoroutine = null;
         }
 
         private IEnumerator ShowDeltaPopup(int points)
@@ -998,15 +1060,34 @@ namespace PolyFuse.UI
             _comboCanvasGroup.alpha = 0f;
         }
 
-        public void ShowGameOver(int finalScore)
+        public void ShowGameOver(int finalScore, int maxCombo = 0, int linesCleared = 0, int piecesPlaced = 0)
         {
             if (_gameOverPanel != null)
             {
                 _gameOverPanel.SetActive(true);
+                if (_gameOverCanvasGroup != null && _gameOverCardRt != null)
+                {
+                    StartCoroutine(AnimateModalEntrance(_gameOverCanvasGroup, _gameOverCardRt));
+                }
             }
             if (_finalScoreText != null)
             {
                 _finalScoreText.text = finalScore.ToString("N0");
+            }
+            if (_maxComboStatText != null)
+            {
+                _maxComboStatText.text = maxCombo > 1 ? $"{maxCombo}×" : "1×";
+                if (maxCombo >= 5) _maxComboStatText.color = new Color(0.00f, 0.90f, 1.0f, 1.0f); // Electric Cyan
+                else if (maxCombo >= 3) _maxComboStatText.color = new Color(1.0f, 0.80f, 0.20f, 1.0f); // Gold
+                else _maxComboStatText.color = Color.white;
+            }
+            if (_linesClearedStatText != null)
+            {
+                _linesClearedStatText.text = linesCleared.ToString("N0");
+            }
+            if (_piecesPlacedStatText != null)
+            {
+                _piecesPlacedStatText.text = piecesPlaced.ToString("N0");
             }
             if (_finalScoreBestText != null)
             {
@@ -1055,6 +1136,8 @@ namespace PolyFuse.UI
             smRt.anchorMax = Vector2.one;
             smRt.sizeDelta = Vector2.zero;
 
+            _settingsModalCanvasGroup = _settingsModalPanel.AddComponent<CanvasGroup>();
+
             // Fullscreen dark frosted dimming - Tapping backdrop resumes
             Image smBg = _settingsModalPanel.AddComponent<Image>();
             smBg.color = new Color(0.02f, 0.04f, 0.07f, 0.94f);
@@ -1064,11 +1147,11 @@ namespace PolyFuse.UI
             // Centered Vertical Container (No heavy box)
             GameObject listContainer = new GameObject("ZenListContainer");
             listContainer.transform.SetParent(_settingsModalPanel.transform, false);
-            RectTransform lcRt = listContainer.AddComponent<RectTransform>();
-            lcRt.anchorMin = new Vector2(0.5f, 0.5f);
-            lcRt.anchorMax = new Vector2(0.5f, 0.5f);
-            lcRt.pivot = new Vector2(0.5f, 0.5f);
-            lcRt.sizeDelta = new Vector2(520f, 480f);
+            _settingsListContainerRt = listContainer.AddComponent<RectTransform>();
+            _settingsListContainerRt.anchorMin = new Vector2(0.5f, 0.5f);
+            _settingsListContainerRt.anchorMax = new Vector2(0.5f, 0.5f);
+            _settingsListContainerRt.pivot = new Vector2(0.5f, 0.5f);
+            _settingsListContainerRt.sizeDelta = new Vector2(520f, 480f);
 
             VerticalLayoutGroup vlg = listContainer.AddComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(0, 0, 0, 0);
@@ -1144,6 +1227,48 @@ namespace PolyFuse.UI
             UpdateSettingsButtonLabels();
         }
 
+        private void CreateStatCell(Transform parent, Font font, string label, out Text valueText)
+        {
+            GameObject cellObj = new GameObject($"StatCell_{label}");
+            cellObj.transform.SetParent(parent, false);
+            Image bg = cellObj.AddComponent<Image>();
+            bg.sprite = GetSubtleButtonSprite();
+            bg.type = Image.Type.Sliced;
+            bg.color = new Color(0.05f, 0.07f, 0.12f, 0.85f);
+            AddOutline(cellObj, new Color(0.18f, 0.28f, 0.40f, 0.40f), new Vector2(1.0f, -1.0f));
+
+            VerticalLayoutGroup vlg = cellObj.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(4, 4, 6, 6);
+            vlg.spacing = 1f;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = true;
+
+            GameObject lblObj = new GameObject("Label");
+            lblObj.transform.SetParent(cellObj.transform, false);
+            Text lbl = lblObj.AddComponent<Text>();
+            lbl.font = font;
+            lbl.text = label;
+            lbl.fontSize = 13;
+            lbl.fontStyle = FontStyle.Bold;
+            lbl.alignment = TextAnchor.MiddleCenter;
+            lbl.color = new Color(0.55f, 0.64f, 0.75f, 1.0f);
+            lbl.raycastTarget = false;
+
+            GameObject valObj = new GameObject("Value");
+            valObj.transform.SetParent(cellObj.transform, false);
+            valueText = valObj.AddComponent<Text>();
+            valueText.font = font;
+            valueText.text = "0";
+            valueText.fontSize = 20;
+            valueText.fontStyle = FontStyle.Bold;
+            valueText.alignment = TextAnchor.MiddleCenter;
+            valueText.color = Color.white;
+            valueText.raycastTarget = false;
+        }
+
         private void CreateMinimalListButton(Transform parent, Font font, string text, out Text labelText, Action onClick, Color bgColor, Color outlineColor, Color? textColor = null, float height = 84f, int fontSize = 26)
         {
             GameObject btnObj = new GameObject($"ListBtn_{text}");
@@ -1205,18 +1330,96 @@ namespace PolyFuse.UI
         {
             if (_settingsModalPanel == null) return;
             bool active = !_settingsModalPanel.activeSelf;
-            _settingsModalPanel.SetActive(active);
-            Time.timeScale = active ? 0.0f : 1.0f;
-            if (active) UpdateSettingsButtonLabels();
+            if (active)
+            {
+                _settingsModalPanel.SetActive(true);
+                Time.timeScale = 0.0f;
+                UpdateSettingsButtonLabels();
+                if (_settingsModalCanvasGroup != null && _settingsListContainerRt != null)
+                {
+                    StartCoroutine(AnimateModalEntrance(_settingsModalCanvasGroup, _settingsListContainerRt));
+                }
+            }
+            else
+            {
+                CloseSettingsModal();
+            }
         }
 
         public void CloseSettingsModal()
         {
-            if (_settingsModalPanel != null)
+            if (_settingsModalPanel != null && _settingsModalPanel.activeSelf)
             {
-                _settingsModalPanel.SetActive(false);
+                if (_settingsModalCanvasGroup != null && _settingsListContainerRt != null)
+                {
+                    StartCoroutine(AnimateModalExit(_settingsModalCanvasGroup, _settingsListContainerRt, () =>
+                    {
+                        _settingsModalPanel.SetActive(false);
+                        Time.timeScale = 1.0f;
+                    }));
+                }
+                else
+                {
+                    _settingsModalPanel.SetActive(false);
+                    Time.timeScale = 1.0f;
+                }
             }
-            Time.timeScale = 1.0f;
+            else
+            {
+                Time.timeScale = 1.0f;
+            }
+        }
+
+        private IEnumerator AnimateModalEntrance(CanvasGroup cg, RectTransform container)
+        {
+            if (cg == null || container == null) yield break;
+
+            cg.alpha = 0f;
+            Vector3 startScale = Vector3.one * 0.92f;
+            Vector3 targetScale = Vector3.one;
+            container.localScale = startScale;
+
+            float elapsed = 0f;
+            float dur = 0.16f;
+
+            while (elapsed < dur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+                float ease = 1f - Mathf.Pow(1f - t, 3f);
+                cg.alpha = t;
+                container.localScale = Vector3.Lerp(startScale, targetScale, ease);
+                yield return null;
+            }
+
+            cg.alpha = 1f;
+            container.localScale = Vector3.one;
+        }
+
+        private IEnumerator AnimateModalExit(CanvasGroup cg, RectTransform container, Action onComplete)
+        {
+            if (cg == null || container == null)
+            {
+                onComplete?.Invoke();
+                yield break;
+            }
+
+            float elapsed = 0f;
+            float dur = 0.10f;
+            Vector3 startScale = container.localScale;
+            Vector3 endScale = Vector3.one * 0.95f;
+
+            while (elapsed < dur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / dur);
+                cg.alpha = 1f - t;
+                container.localScale = Vector3.Lerp(startScale, endScale, t);
+                yield return null;
+            }
+
+            cg.alpha = 0f;
+            onComplete?.Invoke();
         }
 
         public void SetDangerState(bool inDanger)
