@@ -587,14 +587,14 @@ namespace PolyFuse.UI
             Image goBg = _gameOverPanel.AddComponent<Image>();
             goBg.color = new Color(0.02f, 0.03f, 0.06f, 0.95f); // Deep dark obsidian veil
 
-            // Central Floating Glass Card
+            // Central Floating Glass Card (830px wide = ~77% of 1080 screen width)
             GameObject cardObj = new GameObject("GameOverCard");
             cardObj.transform.SetParent(_gameOverPanel.transform, false);
             _gameOverCardRt = cardObj.AddComponent<RectTransform>();
             _gameOverCardRt.anchorMin = new Vector2(0.5f, 0.5f);
             _gameOverCardRt.anchorMax = new Vector2(0.5f, 0.5f);
             _gameOverCardRt.pivot = new Vector2(0.5f, 0.5f);
-            _gameOverCardRt.sizeDelta = new Vector2(660f, 760f);
+            _gameOverCardRt.sizeDelta = new Vector2(830f, 920f);
 
             Image cardBg = cardObj.AddComponent<Image>();
             cardBg.sprite = GetSubtleButtonSprite();
@@ -604,8 +604,8 @@ namespace PolyFuse.UI
             AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
 
             VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
-            cardLayout.padding = new RectOffset(40, 40, 36, 36);
-            cardLayout.spacing = 18f;
+            cardLayout.padding = new RectOffset(45, 45, 40, 40);
+            cardLayout.spacing = 20f;
             cardLayout.childAlignment = TextAnchor.UpperCenter;
             cardLayout.childControlWidth = true;
             cardLayout.childControlHeight = false;
@@ -618,24 +618,24 @@ namespace PolyFuse.UI
             Text titleText = titleObj.AddComponent<Text>();
             titleText.font = font;
             titleText.text = "GAME OVER";
-            titleText.fontSize = 44;
+            titleText.fontSize = 48;
             titleText.fontStyle = FontStyle.Bold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.color = Color.white;
             titleText.raycastTarget = false;
             AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
             LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
-            tLe.minHeight = 48f;
-            tLe.preferredHeight = 48f;
+            tLe.minHeight = 52f;
+            tLe.preferredHeight = 52f;
 
             // 2. Score Readout Section (Floating inside card)
             GameObject scoreSection = new GameObject("ScoreSection");
             scoreSection.transform.SetParent(cardObj.transform, false);
             RectTransform ssRt = scoreSection.AddComponent<RectTransform>();
-            ssRt.sizeDelta = new Vector2(580f, 138f);
+            ssRt.sizeDelta = new Vector2(740f, 160f);
             LayoutElement ssLe = scoreSection.AddComponent<LayoutElement>();
-            ssLe.minHeight = 138f;
-            ssLe.preferredHeight = 138f;
+            ssLe.minHeight = 160f;
+            ssLe.preferredHeight = 160f;
 
             VerticalLayoutGroup ssVlg = scoreSection.AddComponent<VerticalLayoutGroup>();
             ssVlg.padding = new RectOffset(0, 0, 0, 0);
@@ -652,16 +652,16 @@ namespace PolyFuse.UI
             Text scLbl = scLblObj.AddComponent<Text>();
             scLbl.font = font;
             scLbl.text = "FINAL SCORE";
-            scLbl.fontSize = 20;
+            scLbl.fontSize = 24;
             scLbl.fontStyle = FontStyle.Bold;
             scLbl.alignment = TextAnchor.MiddleCenter;
             scLbl.color = new Color(0.60f, 0.68f, 0.78f, 1.0f);
             scLbl.raycastTarget = false;
             LayoutElement sclLe = scLblObj.AddComponent<LayoutElement>();
-            sclLe.minHeight = 24f;
-            sclLe.preferredHeight = 24f;
+            sclLe.minHeight = 28f;
+            sclLe.preferredHeight = 28f;
 
-            // Final Score Digits (Huge 88px Bold White Digits)
+            // Final Score Digits (Huge 104px Bold White Digits)
             GameObject finalScoreObj = new GameObject("FinalScoreText");
             finalScoreObj.transform.SetParent(scoreSection.transform, false);
             _finalScoreText = finalScoreObj.AddComponent<Text>();
@@ -670,28 +670,28 @@ namespace PolyFuse.UI
             _finalScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _finalScoreText.verticalOverflow = VerticalWrapMode.Overflow;
             _finalScoreText.text = "0";
-            _finalScoreText.fontSize = 88;
+            _finalScoreText.fontSize = 104;
             _finalScoreText.fontStyle = FontStyle.Bold;
             _finalScoreText.alignment = TextAnchor.MiddleCenter;
             _finalScoreText.color = Color.white;
             AddOutline(finalScoreObj, new Color(0.04f, 0.06f, 0.10f, 0.85f), new Vector2(2.5f, -2.5f));
             AddShadow(finalScoreObj, new Color(0f, 0f, 0f, 0.75f), new Vector2(3f, -3f));
             LayoutElement fsLe = finalScoreObj.AddComponent<LayoutElement>();
-            fsLe.minHeight = 96f;
-            fsLe.preferredHeight = 96f;
+            fsLe.minHeight = 110f;
+            fsLe.preferredHeight = 110f;
 
-            // 3. Run Stats Row (580 x 96)
+            // 3. Run Stats Row (740 x 110)
             GameObject statsRowObj = new GameObject("RunStatsRow");
             statsRowObj.transform.SetParent(cardObj.transform, false);
             RectTransform srRt = statsRowObj.AddComponent<RectTransform>();
-            srRt.sizeDelta = new Vector2(580f, 96f);
+            srRt.sizeDelta = new Vector2(740f, 110f);
             LayoutElement srLe = statsRowObj.AddComponent<LayoutElement>();
-            srLe.minHeight = 96f;
-            srLe.preferredHeight = 96f;
+            srLe.minHeight = 110f;
+            srLe.preferredHeight = 110f;
 
             HorizontalLayoutGroup srHlg = statsRowObj.AddComponent<HorizontalLayoutGroup>();
             srHlg.padding = new RectOffset(0, 0, 0, 0);
-            srHlg.spacing = 10f;
+            srHlg.spacing = 14f;
             srHlg.childAlignment = TextAnchor.MiddleCenter;
             srHlg.childControlWidth = true;
             srHlg.childControlHeight = true;
@@ -702,14 +702,14 @@ namespace PolyFuse.UI
             CreateStatCell(statsRowObj.transform, font, "LINES", out _linesClearedStatText);
             CreateStatCell(statsRowObj.transform, font, "PIECES", out _piecesPlacedStatText);
 
-            // 4. Best Score Pill Inset (580 x 76)
+            // 4. Best Score Pill Inset (740 x 88)
             GameObject bestPillObj = new GameObject("BestPill");
             bestPillObj.transform.SetParent(cardObj.transform, false);
             RectTransform bpRt = bestPillObj.AddComponent<RectTransform>();
-            bpRt.sizeDelta = new Vector2(580f, 76f);
+            bpRt.sizeDelta = new Vector2(740f, 88f);
             LayoutElement bpLe = bestPillObj.AddComponent<LayoutElement>();
-            bpLe.minHeight = 76f;
-            bpLe.preferredHeight = 76f;
+            bpLe.minHeight = 88f;
+            bpLe.preferredHeight = 88f;
 
             Image bpImg = bestPillObj.AddComponent<Image>();
             bpImg.sprite = GetSubtleButtonSprite();
@@ -726,7 +726,7 @@ namespace PolyFuse.UI
             _finalScoreBestText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _finalScoreBestText.verticalOverflow = VerticalWrapMode.Overflow;
             _finalScoreBestText.text = "BEST:  ★ 0";
-            _finalScoreBestText.fontSize = 26;
+            _finalScoreBestText.fontSize = 30;
             _finalScoreBestText.fontStyle = FontStyle.Bold;
             _finalScoreBestText.alignment = TextAnchor.MiddleCenter;
             _finalScoreBestText.color = new Color(1.0f, 0.82f, 0.20f, 1.0f);
@@ -735,14 +735,14 @@ namespace PolyFuse.UI
             btRt.anchorMax = Vector2.one;
             btRt.sizeDelta = Vector2.zero;
 
-            // 5. Play Again Hero Button (580 x 96)
+            // 5. Play Again Hero Button (740 x 108)
             GameObject btnObj = new GameObject("PlayAgainButton");
             btnObj.transform.SetParent(cardObj.transform, false);
             RectTransform btnRt = btnObj.AddComponent<RectTransform>();
-            btnRt.sizeDelta = new Vector2(580f, 96f);
+            btnRt.sizeDelta = new Vector2(740f, 108f);
             LayoutElement btnLe = btnObj.AddComponent<LayoutElement>();
-            btnLe.minHeight = 96f;
-            btnLe.preferredHeight = 96f;
+            btnLe.minHeight = 108f;
+            btnLe.preferredHeight = 108f;
 
             Image btnImg = btnObj.AddComponent<Image>();
             btnImg.sprite = GetSubtleButtonSprite();
@@ -763,7 +763,7 @@ namespace PolyFuse.UI
             btnLabel.font = font;
             btnLabel.raycastTarget = false;
             btnLabel.text = "▶  PLAY AGAIN";
-            btnLabel.fontSize = 32;
+            btnLabel.fontSize = 36;
             btnLabel.fontStyle = FontStyle.Bold;
             btnLabel.alignment = TextAnchor.MiddleCenter;
             btnLabel.color = new Color(0.04f, 0.07f, 0.12f, 1.0f);
@@ -1150,18 +1150,18 @@ namespace PolyFuse.UI
             Button bgDismiss = _settingsModalPanel.AddComponent<Button>();
             bgDismiss.onClick.AddListener(CloseSettingsModal);
 
-            // Centered Vertical Container (No heavy box)
+            // Centered Vertical Container (820px wide = ~76% of 1080 screen width)
             GameObject listContainer = new GameObject("ZenListContainer");
             listContainer.transform.SetParent(_settingsModalPanel.transform, false);
             _settingsListContainerRt = listContainer.AddComponent<RectTransform>();
             _settingsListContainerRt.anchorMin = new Vector2(0.5f, 0.5f);
             _settingsListContainerRt.anchorMax = new Vector2(0.5f, 0.5f);
             _settingsListContainerRt.pivot = new Vector2(0.5f, 0.5f);
-            _settingsListContainerRt.sizeDelta = new Vector2(520f, 480f);
+            _settingsListContainerRt.sizeDelta = new Vector2(820f, 620f);
 
             VerticalLayoutGroup vlg = listContainer.AddComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(0, 0, 0, 0);
-            vlg.spacing = 24f; // Clean 24px gap between Title and Buttons
+            vlg.spacing = 28f; // Clean 28px gap between Title and Buttons
             vlg.childAlignment = TextAnchor.MiddleCenter;
             vlg.childControlWidth = true;
             vlg.childControlHeight = true;
@@ -1174,22 +1174,22 @@ namespace PolyFuse.UI
             Text title = titleObj.AddComponent<Text>();
             title.font = font;
             title.text = "PAUSED";
-            title.fontSize = 42;
+            title.fontSize = 52;
             title.fontStyle = FontStyle.Bold;
             title.alignment = TextAnchor.MiddleCenter;
             title.color = Color.white;
             title.raycastTarget = false;
             AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
             LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
-            tLe.minHeight = 52f;
-            tLe.preferredHeight = 52f;
+            tLe.minHeight = 58f;
+            tLe.preferredHeight = 58f;
 
             // 2. Buttons Stack Container (Guarantees 100% equal spacing between all 4 buttons)
             GameObject btnsObj = new GameObject("ButtonsStack");
             btnsObj.transform.SetParent(listContainer.transform, false);
             VerticalLayoutGroup bVlg = btnsObj.AddComponent<VerticalLayoutGroup>();
             bVlg.padding = new RectOffset(0, 0, 0, 0);
-            bVlg.spacing = 16f; // Exactly 16px between every button!
+            bVlg.spacing = 18f; // Exactly 18px between every button!
             bVlg.childAlignment = TextAnchor.MiddleCenter;
             bVlg.childControlWidth = true;
             bVlg.childControlHeight = true;
@@ -1205,14 +1205,14 @@ namespace PolyFuse.UI
                     audio.ToggleSound();
                     UpdateSettingsButtonLabels();
                 }
-            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f));
+            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f), height: 98f, fontSize: 32);
 
             // Button 2: Haptics Toggle
             CreateMinimalListButton(btnsObj.transform, font, "HAPTICS:  <color=#10B981>ON</color>", out _hapticsOptionText, () =>
             {
                 PolyFuse.Juice.HapticFeedbackManager.Instance?.ToggleHaptics();
                 UpdateSettingsButtonLabels();
-            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f));
+            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f), height: 98f, fontSize: 32);
 
             // Button 3: Restart Run (Vibrant Crimson with crisp white text)
             Text dummyRestart;
@@ -1220,14 +1220,14 @@ namespace PolyFuse.UI
             {
                 CloseSettingsModal();
                 OnRestartRequested?.Invoke();
-            }, new Color(0.85f, 0.20f, 0.30f, 0.92f), new Color(0.96f, 0.35f, 0.45f, 0.50f), textColor: Color.white);
+            }, new Color(0.85f, 0.20f, 0.30f, 0.92f), new Color(0.96f, 0.35f, 0.45f, 0.50f), textColor: Color.white, height: 98f, fontSize: 32);
 
             // Button 4: Resume Hero Button
             Text dummyResume;
             CreateMinimalListButton(btnsObj.transform, font, "▶  RESUME", out dummyResume, () =>
             {
                 CloseSettingsModal();
-            }, new Color(0.00f, 0.90f, 1.0f, 1.0f), new Color(0.00f, 0.90f, 1.0f, 0.50f), textColor: new Color(0.04f, 0.07f, 0.12f, 1.0f));
+            }, new Color(0.00f, 0.90f, 1.0f, 1.0f), new Color(0.00f, 0.90f, 1.0f, 0.50f), textColor: new Color(0.04f, 0.07f, 0.12f, 1.0f), height: 98f, fontSize: 34);
 
             _settingsModalPanel.SetActive(false);
             UpdateSettingsButtonLabels();
@@ -1244,7 +1244,7 @@ namespace PolyFuse.UI
             AddOutline(cellObj, new Color(0.20f, 0.32f, 0.48f, 0.50f), new Vector2(1.5f, -1.5f));
 
             VerticalLayoutGroup vlg = cellObj.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(6, 6, 8, 8);
+            vlg.padding = new RectOffset(8, 8, 10, 10);
             vlg.spacing = 2f;
             vlg.childAlignment = TextAnchor.MiddleCenter;
             vlg.childControlWidth = true;
@@ -1257,7 +1257,7 @@ namespace PolyFuse.UI
             Text lbl = lblObj.AddComponent<Text>();
             lbl.font = font;
             lbl.text = label;
-            lbl.fontSize = 16;
+            lbl.fontSize = 18;
             lbl.fontStyle = FontStyle.Bold;
             lbl.alignment = TextAnchor.MiddleCenter;
             lbl.color = new Color(0.65f, 0.74f, 0.85f, 1.0f);
@@ -1268,20 +1268,20 @@ namespace PolyFuse.UI
             valueText = valObj.AddComponent<Text>();
             valueText.font = font;
             valueText.text = "0";
-            valueText.fontSize = 32;
+            valueText.fontSize = 38;
             valueText.fontStyle = FontStyle.Bold;
             valueText.alignment = TextAnchor.MiddleCenter;
             valueText.color = Color.white;
             valueText.raycastTarget = false;
         }
 
-        private void CreateMinimalListButton(Transform parent, Font font, string text, out Text labelText, Action onClick, Color bgColor, Color outlineColor, Color? textColor = null, float height = 84f, int fontSize = 26)
+        private void CreateMinimalListButton(Transform parent, Font font, string text, out Text labelText, Action onClick, Color bgColor, Color outlineColor, Color? textColor = null, float height = 98f, int fontSize = 32)
         {
             GameObject btnObj = new GameObject($"ListBtn_{text}");
             btnObj.transform.SetParent(parent, false);
 
             RectTransform rt = btnObj.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(520f, height);
+            rt.sizeDelta = new Vector2(740f, height);
 
             Image img = btnObj.AddComponent<Image>();
             img.sprite = GetSubtleButtonSprite();
