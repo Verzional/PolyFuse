@@ -81,43 +81,86 @@ namespace PolyFuse.Juice
             }
         }
 
+        private bool _inDangerMode = false;
+
         private void Update()
         {
             float time = Time.time;
 
-            // 1. Rainbow chromatic cycle for God mode (Combo >= 7)
-            if (_currentCombo >= 7)
+            // 1. Target color selection
+            if (_inDangerMode)
             {
+                _targetColor = new Color(0.92f, 0.24f, 0.38f, 0.60f); // Warm, subtle Coral/Crimson
+            }
+            else if (_currentCombo >= 7)
+            {
+                // Rainbow chromatic cycle for God mode (Combo >= 7)
                 float hue = (time * 0.35f) % 1.0f;
                 _targetColor = Color.HSVToRGB(hue, 0.85f, 1.0f);
                 _targetColor.a = 0.95f;
             }
 
             // 2. Smooth color transition
-            _currentColor = Color.Lerp(_currentColor, _targetColor, Time.deltaTime * 6f);
+            _currentColor = Color.Lerp(_currentColor, _targetColor, Time.deltaTime * (_inDangerMode ? 8f : 6f));
 
-            // 3. Dynamic harmonic breathing pulse
-            float pulse = Mathf.Sin(time * _pulseSpeed * Mathf.PI * 2f) * _pulseIntensity;
+            // 3. Dynamic pulse (Synchronized 62.5 BPM Lub-Dub double-beat in danger mode)
+            float pulse = 0f;
+            if (_inDangerMode)
+            {
+                float cycle = time % 0.96f; // Exactly matches ProceduralAudio heartbeat clip duration
+                if (cycle < 0.20f)
+                {
+                    // "Lub" pulse
+                    pulse = Mathf.Sin((cycle / 0.20f) * Mathf.PI) * 0.08f;
+                }
+                else if (cycle >= 0.25f && cycle < 0.46f)
+                {
+                    // "Dub" pulse
+                    pulse = Mathf.Sin(((cycle - 0.25f) / 0.21f) * Mathf.PI) * 0.12f;
+                }
+            }
+            else
+            {
+                pulse = Mathf.Sin(time * _pulseSpeed * Mathf.PI * 2f) * _pulseIntensity;
+            }
+
             float currentAlpha = Mathf.Clamp01(_currentColor.a + pulse);
 
-            // Apply to halo (soft diffused atmospheric underglow: ~35% alpha)
+            // Apply to halo (soft diffused atmospheric underglow)
             if (_haloRenderer != null)
             {
                 Color haloCol = _currentColor;
-                haloCol.a = currentAlpha * 0.40f;
+                haloCol.a = currentAlpha * 0.32f;
                 _haloRenderer.GetPropertyBlock(_haloPropBlock);
                 _haloPropBlock.SetColor("_Color", haloCol);
                 _haloRenderer.SetPropertyBlock(_haloPropBlock);
             }
 
-            // Apply to rim (sharp razor-clean neon hairline: bright with white-hot core)
+            // Apply to rim (sharp razor-clean neon hairline)
             if (_rimRenderer != null)
             {
-                Color rimCol = Color.Lerp(_currentColor, Color.white, 0.40f);
-                rimCol.a = Mathf.Clamp01(currentAlpha * 1.15f);
+                Color rimCol = Color.Lerp(_currentColor, Color.white, 0.30f);
+                rimCol.a = Mathf.Clamp01(currentAlpha * 1.05f);
                 _rimRenderer.GetPropertyBlock(_rimPropBlock);
                 _rimPropBlock.SetColor("_Color", rimCol);
                 _rimRenderer.SetPropertyBlock(_rimPropBlock);
+            }
+        }
+
+        public void SetDangerState(bool inDanger)
+        {
+            _inDangerMode = inDanger;
+            if (inDanger)
+            {
+                _targetColor = new Color(0.92f, 0.24f, 0.38f, 0.60f);
+                if (_bgTransitionCoroutine != null) StopCoroutine(_bgTransitionCoroutine);
+                _bgTransitionCoroutine = StartCoroutine(TransitionCameraBackground(new Color(0.052f, 0.045f, 0.052f, 1.0f))); // Subtle warm dusk noir
+            }
+            else
+            {
+                // Escape from danger: Trigger heroic cyan surge and restore combo background
+                SetComboState(_currentCombo);
+                TriggerClearSurge(_currentCombo);
             }
         }
 
@@ -178,8 +221,11 @@ namespace PolyFuse.Juice
                     break;
             }
 
-            if (_bgTransitionCoroutine != null) StopCoroutine(_bgTransitionCoroutine);
-            _bgTransitionCoroutine = StartCoroutine(TransitionCameraBackground(targetBg));
+            if (!_inDangerMode)
+            {
+                if (_bgTransitionCoroutine != null) StopCoroutine(_bgTransitionCoroutine);
+                _bgTransitionCoroutine = StartCoroutine(TransitionCameraBackground(targetBg));
+            }
         }
 
         public void TriggerClearSurge(int comboStreak)

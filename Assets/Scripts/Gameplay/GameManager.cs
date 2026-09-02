@@ -200,9 +200,9 @@ namespace PolyFuse.Gameplay
                 _ui?.UpdateScore(score, _greedEngine.HighScore, delta);
             };
 
-            _greedEngine.OnComboChanged += (streak, grace, pitch) =>
+            _greedEngine.OnComboChanged += (streak, grace, capacity, pitch) =>
             {
-                _ui?.UpdateComboState(streak, grace, pitch);
+                _ui?.UpdateComboState(streak, grace, capacity, pitch);
                 BoardAuraController.Instance?.SetComboState(streak);
             };
 
@@ -225,6 +225,8 @@ namespace PolyFuse.Gameplay
             _isGameOver = false;
             _inDangerMode = false;
             _audio.PlayHeartbeat(false);
+            BoardAuraController.Instance?.SetDangerState(false);
+            if (_ui != null) _ui.SetDangerState(false);
             _board.ResetBoard();
             _greedEngine.ResetGame();
             BoardAuraController.Instance?.SetComboState(0);
@@ -339,13 +341,20 @@ namespace PolyFuse.Gameplay
             {
                 _inDangerMode = true;
                 _audio.PlayHeartbeat(true);
+                BoardAuraController.Instance?.SetDangerState(true);
+                if (_ui != null) _ui.SetDangerState(true);
             }
             else if (_inDangerMode && fillRatio < 0.50f)
             {
                 _inDangerMode = false;
                 _audio.PlayHeartbeat(false);
                 _audio.PlayCloseCallFanfare();
-                if (_ui != null) _ui.ShowCloseCallBanner();
+                BoardAuraController.Instance?.SetDangerState(false);
+                if (_ui != null)
+                {
+                    _ui.SetDangerState(false);
+                    _ui.ShowCloseCallBanner();
+                }
                 ProceduralParticleManager.Instance?.SpawnConfettiBurst(Vector3.zero);
             }
 
@@ -371,6 +380,8 @@ namespace PolyFuse.Gameplay
             _isGameOver = true;
             _inDangerMode = false;
             _audio.PlayHeartbeat(false);
+            BoardAuraController.Instance?.SetDangerState(false);
+            if (_ui != null) _ui.SetDangerState(false);
             _audio.PlayGameOver();
             Debug.Log($"[PolyFuse] GAME OVER! Final Score: {_greedEngine.CurrentScore}");
 
