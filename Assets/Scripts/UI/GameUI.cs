@@ -967,6 +967,11 @@ namespace PolyFuse.UI
                 return;
             }
 
+            if (_comboRt != null && !_comboRt.gameObject.activeSelf)
+            {
+                _comboRt.gameObject.SetActive(true);
+            }
+
             if (_comboText != null)
             {
                 Color hypeColor;
@@ -1122,6 +1127,7 @@ namespace PolyFuse.UI
             if (_scoreRt != null) _scoreRt.gameObject.SetActive(true);
             if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(true);
             if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(true);
+            if (_comboRt != null) _comboRt.gameObject.SetActive(true);
         }
 
         private Text _soundOptionText;
