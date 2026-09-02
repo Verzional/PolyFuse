@@ -17,9 +17,9 @@ namespace PolyFuse.Interaction
         [Header("Layout Settings")]
         [SerializeField] private Vector3[] _slotPositions = new Vector3[]
         {
-            new Vector3(-2.5f, -4.6f, 0f),
-            new Vector3(0.0f, -4.6f, 0f),
-            new Vector3(2.5f, -4.6f, 0f)
+            new Vector3(-2.5f, -4.75f, 0f),
+            new Vector3(0.0f, -4.75f, 0f),
+            new Vector3(2.5f, -4.75f, 0f)
         };
 
         private readonly DraggablePiece[] _activePieces = new DraggablePiece[3];

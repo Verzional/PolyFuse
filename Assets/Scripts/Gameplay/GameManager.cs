@@ -73,7 +73,7 @@ namespace PolyFuse.Gameplay
                 cam = camObj.AddComponent<Camera>();
                 camObj.tag = "MainCamera";
             }
-            cam.transform.position = new Vector3(0f, -0.95f, -10f);
+            cam.transform.position = new Vector3(0f, -1.25f, -10f);
             cam.orthographic = true;
             cam.orthographicSize = 7.0f;
             cam.backgroundColor = new Color(0.06f, 0.07f, 0.10f, 1.0f);
