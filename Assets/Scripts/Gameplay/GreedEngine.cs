@@ -22,6 +22,7 @@ namespace PolyFuse.Gameplay
         [SerializeField] private int _highScore;
         [SerializeField] private int _comboStreak;
         [SerializeField] private int _graceRemaining;
+        [SerializeField] private int _currentGraceCapacity = 3;
 
         private const string HighScoreKey = "PolyFuse_HighScore";
         private int _startingHighScore;
@@ -31,6 +32,7 @@ namespace PolyFuse.Gameplay
         public int HighScore => _highScore;
         public int ComboStreak => _comboStreak;
         public int GraceRemaining => _graceRemaining;
+        public int CurrentGraceCapacity => _currentGraceCapacity;
         public int MaxGraceTurns => _comboGraceTurns;
         public int MultiLineGraceTurns => _multiLineGraceTurns;
         public int BoardWipeGraceTurns => _multiLineGraceTurns;
@@ -38,7 +40,7 @@ namespace PolyFuse.Gameplay
         public int Multiplier => Mathf.Max(1, _comboStreak);
 
         public event Action<int, int> OnScoreChanged; // (currentScore, pointsDelta)
-        public event Action<int, int, float> OnComboChanged; // (comboStreak, graceRemaining, audioPitch)
+        public event Action<int, int, int, float> OnComboChanged; // (comboStreak, graceRemaining, graceCapacity, audioPitch)
         public event Action<int> OnBoardWipe;
         public event Action<int> OnNewHighScoreAchieved; // (newHighScore)
 
@@ -53,10 +55,11 @@ namespace PolyFuse.Gameplay
             _currentScore = 0;
             _comboStreak = 0;
             _graceRemaining = 0;
+            _currentGraceCapacity = _comboGraceTurns;
             _startingHighScore = _highScore;
             _hasTriggeredNewHighScoreInRun = false;
             OnScoreChanged?.Invoke(_currentScore, 0);
-            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, 1.0f);
+            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, _currentGraceCapacity, 1.0f);
         }
 
         public void RecordPiecePlacement(int unitCount)
@@ -79,10 +82,12 @@ namespace PolyFuse.Gameplay
                 // Multi-line clears (>= 2 lines) or Board Wipe gets extended grace buffer (5 turns)
                 if (clearResult.TotalLines >= 2 || isBoardCompletelyEmpty)
                 {
+                    _currentGraceCapacity = _multiLineGraceTurns;
                     _graceRemaining = _multiLineGraceTurns;
                 }
                 else
                 {
+                    _currentGraceCapacity = _comboGraceTurns;
                     _graceRemaining = _comboGraceTurns;
                 }
 
@@ -111,11 +116,12 @@ namespace PolyFuse.Gameplay
                         // Buffer fully expired -> drop combo back to 0
                         _comboStreak = 0;
                         _graceRemaining = 0;
+                        _currentGraceCapacity = _comboGraceTurns;
                     }
                 }
             }
 
-            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, AudioPitchMultiplier);
+            OnComboChanged?.Invoke(_comboStreak, _graceRemaining, _currentGraceCapacity, AudioPitchMultiplier);
             return totalPointsGained;
         }
 
