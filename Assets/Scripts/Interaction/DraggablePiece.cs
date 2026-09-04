@@ -195,8 +195,8 @@ namespace PolyFuse.Interaction
 
         private void Update()
         {
-            // If Game Over or game is paused, cancel any active drag and ignore new drags
-            if (Time.timeScale == 0f || (PolyFuse.Gameplay.GameManager.Instance != null && PolyFuse.Gameplay.GameManager.Instance.IsGameOver))
+            // If Game Over, Home Screen, or game is paused, cancel any active drag and ignore new drags
+            if (Time.timeScale == 0f || (PolyFuse.Gameplay.GameManager.Instance != null && (PolyFuse.Gameplay.GameManager.Instance.IsGameOver || PolyFuse.Gameplay.GameManager.Instance.IsInHome)))
             {
                 if (_isDragging)
                 {

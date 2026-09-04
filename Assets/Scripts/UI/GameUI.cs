@@ -50,9 +50,20 @@ namespace PolyFuse.UI
         private RectTransform _comboRt;
         private RectTransform _popupRt;
         private RectTransform _celebrationRt;
-        private Rect _lastSafeArea;
-
         public event Action OnRestartRequested;
+        public event Action OnPlayRequested;
+        public event Action OnHomeRequested;
+
+        private GameObject _homePanel;
+        private CanvasGroup _homeCanvasGroup;
+        private RectTransform _homeCardRt;
+        private Text _homeBestScoreText;
+
+        private GameObject _howToPlayPanel;
+        private CanvasGroup _howToPlayCanvasGroup;
+        private RectTransform _howToPlayCardRt;
+
+        private Rect _lastSafeArea;
 
         private void Awake()
         {
@@ -850,6 +861,42 @@ namespace PolyFuse.UI
             blRt.anchorMax = Vector2.one;
             blRt.sizeDelta = Vector2.zero;
 
+            // 6. Main Menu Return Button (88px tall)
+            GameObject homeBtnObj = new GameObject("GameOverHomeButton");
+            homeBtnObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement hbLe = homeBtnObj.AddComponent<LayoutElement>();
+            hbLe.preferredHeight = 88f;
+            hbLe.minHeight = 88f;
+
+            Image hbImg = homeBtnObj.AddComponent<Image>();
+            hbImg.sprite = GetBorderedPillSprite();
+            hbImg.type = Image.Type.Sliced;
+            hbImg.color = Color.white;
+
+            Button hbBtn = homeBtnObj.AddComponent<Button>();
+            hbBtn.onClick.AddListener(() =>
+            {
+                HideGameOver();
+                OnHomeRequested?.Invoke();
+            });
+
+            GameObject hbLabelObj = new GameObject("BtnLabel");
+            hbLabelObj.transform.SetParent(homeBtnObj.transform, false);
+            Text hbLabel = hbLabelObj.AddComponent<Text>();
+            hbLabel.font = font;
+            hbLabel.raycastTarget = false;
+            hbLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            hbLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            hbLabel.text = "⌂   MAIN MENU";
+            hbLabel.fontSize = 30;
+            hbLabel.fontStyle = FontStyle.Bold;
+            hbLabel.alignment = TextAnchor.MiddleCenter;
+            hbLabel.color = new Color(0.75f, 0.84f, 0.95f, 1.0f);
+            RectTransform hblRt = hbLabelObj.GetComponent<RectTransform>();
+            hblRt.anchorMin = Vector2.zero;
+            hblRt.anchorMax = Vector2.one;
+            hblRt.sizeDelta = Vector2.zero;
+
             _gameOverPanel.SetActive(false);
 
             // 5. Top-Right Floating Settings Gear Button (Naked icon, no outer box)
@@ -912,8 +959,14 @@ namespace PolyFuse.UI
             clbRt.anchorMax = Vector2.one;
             clbRt.sizeDelta = Vector2.zero;
 
-            // 7. Settings Modal Panel
+            // 7. Living Home Screen Overlay
+            BuildHomeScreen(canvas.transform, font);
+
+            // 8. Settings Modal Panel
             BuildSettingsModal(canvas.transform, font);
+
+            // 9. How To Play Modal
+            BuildHowToPlayModal(canvas.transform, font);
         }
 
         private void AddOutline(GameObject target, Color color, Vector2 dist)
@@ -1147,6 +1200,7 @@ namespace PolyFuse.UI
         {
             if (_gameOverPanel != null)
             {
+                _gameOverPanel.transform.SetAsLastSibling();
                 _gameOverPanel.SetActive(true);
                 if (_gameOverCanvasGroup != null && _gameOverCardRt != null)
                 {
@@ -1188,10 +1242,7 @@ namespace PolyFuse.UI
             }
 
             // Hide Top HUD during Game Over to eliminate duplicate score competition
-            if (_scoreRt != null) _scoreRt.gameObject.SetActive(false);
-            if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(false);
-            if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(false);
-            if (_comboRt != null) _comboRt.gameObject.SetActive(false);
+            SetTopHUDVisible(false);
         }
 
         public void HideGameOver()
@@ -1202,14 +1253,17 @@ namespace PolyFuse.UI
             }
 
             // Restore Top HUD
-            if (_scoreRt != null) _scoreRt.gameObject.SetActive(true);
-            if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(true);
-            if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(true);
-            if (_comboRt != null) _comboRt.gameObject.SetActive(true);
+            SetTopHUDVisible(true);
         }
 
         private Text _soundOptionText;
         private Text _hapticsOptionText;
+        private Text _settingsTitleText;
+        private GameObject _settingsHowToPlayBtnObj;
+        private GameObject _settingsHomeBtnObj;
+        private GameObject _settingsRestartBtnObj;
+        private GameObject _settingsResumeBtnObj;
+        private Text _settingsResumeText;
 
         private void BuildSettingsModal(Transform parent, Font font)
         {
@@ -1222,60 +1276,60 @@ namespace PolyFuse.UI
 
             _settingsModalCanvasGroup = _settingsModalPanel.AddComponent<CanvasGroup>();
 
-            // Fullscreen dark frosted dimming - Tapping backdrop resumes
+            // Fullscreen dark frosted dimming - Tapping backdrop dismisses modal
             Image smBg = _settingsModalPanel.AddComponent<Image>();
             smBg.color = new Color(0.02f, 0.04f, 0.07f, 0.94f);
             Button bgDismiss = _settingsModalPanel.AddComponent<Button>();
             bgDismiss.onClick.AddListener(CloseSettingsModal);
 
-            // Centered Vertical Container (820px wide = ~76% of 1080 screen width)
-            GameObject listContainer = new GameObject("ZenListContainer");
-            listContainer.transform.SetParent(_settingsModalPanel.transform, false);
-            _settingsListContainerRt = listContainer.AddComponent<RectTransform>();
+            // Centered Obsidian Glass Card (840px wide)
+            GameObject cardObj = new GameObject("SettingsCard");
+            cardObj.transform.SetParent(_settingsModalPanel.transform, false);
+            _settingsListContainerRt = cardObj.AddComponent<RectTransform>();
             _settingsListContainerRt.anchorMin = new Vector2(0.5f, 0.5f);
             _settingsListContainerRt.anchorMax = new Vector2(0.5f, 0.5f);
             _settingsListContainerRt.pivot = new Vector2(0.5f, 0.5f);
-            _settingsListContainerRt.sizeDelta = new Vector2(820f, 532f);
+            _settingsListContainerRt.sizeDelta = new Vector2(840f, 0f);
 
-            VerticalLayoutGroup vlg = listContainer.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(0, 0, 0, 0);
-            vlg.spacing = 28f; // Clean 28px gap between Title and Buttons
-            vlg.childAlignment = TextAnchor.MiddleCenter;
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = true;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.sprite = GetBorderedCardSprite();
+            cardBg.type = Image.Type.Sliced;
+            cardBg.color = Color.white;
+            AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
 
-            // 1. Title: "PAUSED"
-            GameObject titleObj = new GameObject("PauseTitle");
-            titleObj.transform.SetParent(listContainer.transform, false);
-            Text title = titleObj.AddComponent<Text>();
-            title.font = font;
-            title.text = "PAUSED";
-            title.fontSize = 52;
-            title.fontStyle = FontStyle.Bold;
-            title.alignment = TextAnchor.MiddleCenter;
-            title.color = Color.white;
-            title.raycastTarget = false;
+            VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
+            cardLayout.padding = new RectOffset(42, 42, 40, 40);
+            cardLayout.spacing = 15f;
+            cardLayout.childAlignment = TextAnchor.UpperCenter;
+            cardLayout.childControlWidth = true;
+            cardLayout.childControlHeight = true;
+            cardLayout.childForceExpandWidth = true;
+            cardLayout.childForceExpandHeight = false;
+
+            ContentSizeFitter cardFitter = cardObj.AddComponent<ContentSizeFitter>();
+            cardFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            cardFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // 1. Header Title: "PAUSED" / "SETTINGS"
+            GameObject titleObj = new GameObject("SettingsTitle");
+            titleObj.transform.SetParent(cardObj.transform, false);
+            _settingsTitleText = titleObj.AddComponent<Text>();
+            _settingsTitleText.font = font;
+            _settingsTitleText.text = "PAUSED";
+            _settingsTitleText.fontSize = 44;
+            _settingsTitleText.fontStyle = FontStyle.Bold;
+            _settingsTitleText.alignment = TextAnchor.MiddleCenter;
+            _settingsTitleText.color = Color.white;
+            _settingsTitleText.raycastTarget = false;
+            _settingsTitleText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _settingsTitleText.verticalOverflow = VerticalWrapMode.Overflow;
             AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
             LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
-            tLe.minHeight = 58f;
-            tLe.preferredHeight = 58f;
+            tLe.minHeight = 52f;
+            tLe.preferredHeight = 52f;
 
-            // 2. Buttons Stack Container (Guarantees 100% equal spacing between all 4 buttons)
-            GameObject btnsObj = new GameObject("ButtonsStack");
-            btnsObj.transform.SetParent(listContainer.transform, false);
-            VerticalLayoutGroup bVlg = btnsObj.AddComponent<VerticalLayoutGroup>();
-            bVlg.padding = new RectOffset(0, 0, 0, 0);
-            bVlg.spacing = 18f; // Exactly 18px between every button!
-            bVlg.childAlignment = TextAnchor.MiddleCenter;
-            bVlg.childControlWidth = true;
-            bVlg.childControlHeight = true;
-            bVlg.childForceExpandWidth = true;
-            bVlg.childForceExpandHeight = false;
-
-            // Button 1: Sound FX Toggle
-            CreateMinimalListButton(btnsObj.transform, font, "SOUND:  <color=#10B981>ON</color>", out _soundOptionText, () =>
+            // 2. Sound FX Toggle Pill (86px)
+            CreateTogglePill(cardObj.transform, font, "🔊   SOUND EFFECTS", out _soundOptionText, () =>
             {
                 ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
                 if (audio != null)
@@ -1283,32 +1337,166 @@ namespace PolyFuse.UI
                     audio.ToggleSound();
                     UpdateSettingsButtonLabels();
                 }
-            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f), height: 98f, fontSize: 32);
+            });
 
-            // Button 2: Haptics Toggle
-            CreateMinimalListButton(btnsObj.transform, font, "HAPTICS:  <color=#10B981>ON</color>", out _hapticsOptionText, () =>
+            // 3. Haptics Toggle Pill (86px)
+            CreateTogglePill(cardObj.transform, font, "📳   HAPTIC FEEDBACK", out _hapticsOptionText, () =>
             {
                 PolyFuse.Juice.HapticFeedbackManager.Instance?.ToggleHaptics();
                 UpdateSettingsButtonLabels();
-            }, new Color(0.10f, 0.14f, 0.22f, 0.85f), new Color(0.20f, 0.30f, 0.44f, 0.45f), height: 98f, fontSize: 32);
+            });
 
-            // Button 3: Restart Run (Vibrant Crimson with crisp white text)
-            Text dummyRestart;
-            CreateMinimalListButton(btnsObj.transform, font, "↺  RESTART RUN", out dummyRestart, () =>
+            // 4. How to Play Action Pill (86px, only visible when paused in-game)
+            CreateActionPill(cardObj.transform, font, "?   HOW TO PLAY", new Color(0.70f, 0.82f, 0.95f, 1.0f), () =>
+            {
+                OpenHowToPlayModal();
+            }, out _settingsHowToPlayBtnObj);
+
+            // 5. Main Menu Action Pill (86px, only visible when paused in-game)
+            CreateActionPill(cardObj.transform, font, "⌂   MAIN MENU", new Color(0.70f, 0.82f, 0.95f, 1.0f), () =>
+            {
+                CloseSettingsModal();
+                OnHomeRequested?.Invoke();
+            }, out _settingsHomeBtnObj);
+
+            // 6. Restart Run Action Pill (86px, only visible when paused in-game)
+            CreateActionPill(cardObj.transform, font, "↺   RESTART RUN", new Color(0.96f, 0.40f, 0.45f, 1.0f), () =>
             {
                 CloseSettingsModal();
                 OnRestartRequested?.Invoke();
-            }, new Color(0.85f, 0.20f, 0.30f, 0.92f), new Color(0.96f, 0.35f, 0.45f, 0.50f), textColor: Color.white, height: 98f, fontSize: 32);
+            }, out _settingsRestartBtnObj);
 
-            // Button 4: Resume Hero Button
-            Text dummyResume;
-            CreateMinimalListButton(btnsObj.transform, font, "▶  RESUME", out dummyResume, () =>
-            {
-                CloseSettingsModal();
-            }, new Color(0.00f, 0.90f, 1.0f, 1.0f), new Color(0.00f, 0.90f, 1.0f, 0.50f), textColor: new Color(0.04f, 0.07f, 0.12f, 1.0f), height: 98f, fontSize: 34);
+            // 7. Hero Resume / Close Button (98px)
+            _settingsResumeBtnObj = new GameObject("ResumeButton");
+            _settingsResumeBtnObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement resLe = _settingsResumeBtnObj.AddComponent<LayoutElement>();
+            resLe.minHeight = 98f;
+            resLe.preferredHeight = 98f;
+
+            Image resImg = _settingsResumeBtnObj.AddComponent<Image>();
+            resImg.sprite = GetSubtleButtonSprite();
+            resImg.type = Image.Type.Sliced;
+            resImg.color = new Color(0.00f, 0.90f, 1.0f, 1.0f);
+            AddOutline(_settingsResumeBtnObj, new Color(0.00f, 0.90f, 1.0f, 0.50f), new Vector2(1.5f, -1.5f));
+
+            Button resBtn = _settingsResumeBtnObj.AddComponent<Button>();
+            resBtn.onClick.AddListener(CloseSettingsModal);
+
+            GameObject resLblObj = new GameObject("Label");
+            resLblObj.transform.SetParent(_settingsResumeBtnObj.transform, false);
+            _settingsResumeText = resLblObj.AddComponent<Text>();
+            _settingsResumeText.font = font;
+            _settingsResumeText.text = "▶   RESUME";
+            _settingsResumeText.fontSize = 34;
+            _settingsResumeText.fontStyle = FontStyle.Bold;
+            _settingsResumeText.alignment = TextAnchor.MiddleCenter;
+            _settingsResumeText.color = new Color(0.04f, 0.07f, 0.12f, 1.0f);
+            _settingsResumeText.raycastTarget = false;
+            _settingsResumeText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _settingsResumeText.verticalOverflow = VerticalWrapMode.Overflow;
+            RectTransform resLblRt = resLblObj.GetComponent<RectTransform>();
+            resLblRt.anchorMin = Vector2.zero;
+            resLblRt.anchorMax = Vector2.one;
+            resLblRt.sizeDelta = Vector2.zero;
 
             _settingsModalPanel.SetActive(false);
             UpdateSettingsButtonLabels();
+        }
+
+        private void CreateTogglePill(Transform parent, Font font, string title, out Text statusText, Action onToggle)
+        {
+            GameObject pillObj = new GameObject($"TogglePill_{title}");
+            pillObj.transform.SetParent(parent, false);
+
+            LayoutElement le = pillObj.AddComponent<LayoutElement>();
+            le.minHeight = 86f;
+            le.preferredHeight = 86f;
+
+            Image bg = pillObj.AddComponent<Image>();
+            bg.sprite = GetBorderedPillSprite();
+            bg.type = Image.Type.Sliced;
+            bg.color = Color.white;
+
+            Button btn = pillObj.AddComponent<Button>();
+            btn.onClick.AddListener(() => onToggle?.Invoke());
+
+            HorizontalLayoutGroup hlg = pillObj.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(26, 26, 0, 0);
+            hlg.spacing = 10f;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = true;
+
+            // Title (Left-aligned)
+            GameObject titleObj = new GameObject("Title");
+            titleObj.transform.SetParent(pillObj.transform, false);
+            Text titleTxt = titleObj.AddComponent<Text>();
+            titleTxt.font = font;
+            titleTxt.text = title;
+            titleTxt.fontSize = 23;
+            titleTxt.fontStyle = FontStyle.Bold;
+            titleTxt.alignment = TextAnchor.MiddleLeft;
+            titleTxt.color = new Color(0.88f, 0.92f, 0.98f, 1.0f);
+            titleTxt.raycastTarget = false;
+            titleTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            titleTxt.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
+            tLe.flexibleWidth = 1f;
+
+            // Status Badge (Right-aligned)
+            GameObject statObj = new GameObject("Status");
+            statObj.transform.SetParent(pillObj.transform, false);
+            statusText = statObj.AddComponent<Text>();
+            statusText.font = font;
+            statusText.supportRichText = true;
+            statusText.text = "<color=#10B981>[ ON ]</color>";
+            statusText.fontSize = 23;
+            statusText.fontStyle = FontStyle.Bold;
+            statusText.alignment = TextAnchor.MiddleRight;
+            statusText.color = Color.white;
+            statusText.raycastTarget = false;
+            statusText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            statusText.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement sLe = statObj.AddComponent<LayoutElement>();
+            sLe.preferredWidth = 120f;
+        }
+
+        private void CreateActionPill(Transform parent, Font font, string text, Color textColor, Action onClick, out GameObject pillObj)
+        {
+            pillObj = new GameObject($"ActionPill_{text}");
+            pillObj.transform.SetParent(parent, false);
+
+            LayoutElement le = pillObj.AddComponent<LayoutElement>();
+            le.minHeight = 86f;
+            le.preferredHeight = 86f;
+
+            Image bg = pillObj.AddComponent<Image>();
+            bg.sprite = GetBorderedPillSprite();
+            bg.type = Image.Type.Sliced;
+            bg.color = Color.white;
+
+            Button btn = pillObj.AddComponent<Button>();
+            btn.onClick.AddListener(() => onClick?.Invoke());
+
+            GameObject lblObj = new GameObject("Label");
+            lblObj.transform.SetParent(pillObj.transform, false);
+            Text lbl = lblObj.AddComponent<Text>();
+            lbl.font = font;
+            lbl.text = text;
+            lbl.fontSize = 25;
+            lbl.fontStyle = FontStyle.Bold;
+            lbl.alignment = TextAnchor.MiddleCenter;
+            lbl.color = textColor;
+            lbl.raycastTarget = false;
+            lbl.horizontalOverflow = HorizontalWrapMode.Overflow;
+            lbl.verticalOverflow = VerticalWrapMode.Overflow;
+
+            RectTransform lRt = lblObj.GetComponent<RectTransform>();
+            lRt.anchorMin = Vector2.zero;
+            lRt.anchorMax = Vector2.one;
+            lRt.sizeDelta = Vector2.zero;
         }
 
         private void CreateStatCell(Transform parent, Font font, string label, out Text valueText)
@@ -1356,60 +1544,50 @@ namespace PolyFuse.UI
             valueText.verticalOverflow = VerticalWrapMode.Overflow;
         }
 
-        private void CreateMinimalListButton(Transform parent, Font font, string text, out Text labelText, Action onClick, Color bgColor, Color outlineColor, Color? textColor = null, float height = 98f, int fontSize = 32)
-        {
-            GameObject btnObj = new GameObject($"ListBtn_{text}");
-            btnObj.transform.SetParent(parent, false);
-
-            RectTransform rt = btnObj.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(740f, height);
-
-            Image img = btnObj.AddComponent<Image>();
-            img.sprite = GetSubtleButtonSprite();
-            img.type = Image.Type.Sliced;
-            img.color = bgColor;
-            if (outlineColor != Color.clear)
-            {
-                AddOutline(btnObj, outlineColor, new Vector2(1.5f, -1.5f));
-            }
-
-            Button btn = btnObj.AddComponent<Button>();
-            btn.onClick.AddListener(() => onClick?.Invoke());
-
-            LayoutElement le = btnObj.AddComponent<LayoutElement>();
-            le.minHeight = height;
-            le.preferredHeight = height;
-
-            GameObject lblObj = new GameObject("Label");
-            lblObj.transform.SetParent(btnObj.transform, false);
-            labelText = lblObj.AddComponent<Text>();
-            labelText.font = font;
-            labelText.supportRichText = true;
-            labelText.text = text;
-            labelText.fontSize = fontSize;
-            labelText.fontStyle = FontStyle.Bold;
-            labelText.alignment = TextAnchor.MiddleCenter;
-            labelText.color = textColor ?? Color.white;
-            labelText.raycastTarget = false;
-
-            RectTransform lRt = lblObj.GetComponent<RectTransform>();
-            lRt.anchorMin = Vector2.zero;
-            lRt.anchorMax = Vector2.one;
-            lRt.sizeDelta = Vector2.zero;
-        }
-
         private void UpdateSettingsButtonLabels()
         {
             ProceduralAudio audio = FindFirstObjectByType<ProceduralAudio>();
             if (_soundOptionText != null && audio != null)
             {
                 bool on = audio.IsSoundEnabled;
-                _soundOptionText.text = on ? "SOUND:  <color=#10B981>ON</color>" : "SOUND:  <color=#64748B>OFF</color>";
+                _soundOptionText.text = on ? "<color=#10B981>[ ON ]</color>" : "<color=#64748B>[ OFF ]</color>";
             }
             if (_hapticsOptionText != null && PolyFuse.Juice.HapticFeedbackManager.Instance != null)
             {
                 bool on = PolyFuse.Juice.HapticFeedbackManager.Instance.IsHapticsEnabled;
-                _hapticsOptionText.text = on ? "HAPTICS:  <color=#10B981>ON</color>" : "HAPTICS:  <color=#64748B>OFF</color>";
+                _hapticsOptionText.text = on ? "<color=#10B981>[ ON ]</color>" : "<color=#64748B>[ OFF ]</color>";
+            }
+        }
+
+        public void OpenSettingsModal()
+        {
+            if (_settingsModalPanel == null) return;
+            _settingsModalPanel.transform.SetAsLastSibling();
+            _settingsModalPanel.SetActive(true);
+
+            bool isFromHome = PolyFuse.Gameplay.GameManager.Instance != null && PolyFuse.Gameplay.GameManager.Instance.IsInHome;
+            if (isFromHome)
+            {
+                if (_settingsTitleText != null) _settingsTitleText.text = "SETTINGS";
+                if (_settingsHowToPlayBtnObj != null) _settingsHowToPlayBtnObj.SetActive(false);
+                if (_settingsHomeBtnObj != null) _settingsHomeBtnObj.SetActive(false);
+                if (_settingsRestartBtnObj != null) _settingsRestartBtnObj.SetActive(false);
+                if (_settingsResumeText != null) _settingsResumeText.text = "✕   CLOSE";
+            }
+            else
+            {
+                Time.timeScale = 0.0f;
+                if (_settingsTitleText != null) _settingsTitleText.text = "PAUSED";
+                if (_settingsHowToPlayBtnObj != null) _settingsHowToPlayBtnObj.SetActive(true);
+                if (_settingsHomeBtnObj != null) _settingsHomeBtnObj.SetActive(true);
+                if (_settingsRestartBtnObj != null) _settingsRestartBtnObj.SetActive(true);
+                if (_settingsResumeText != null) _settingsResumeText.text = "▶   RESUME";
+            }
+
+            UpdateSettingsButtonLabels();
+            if (_settingsModalCanvasGroup != null && _settingsListContainerRt != null)
+            {
+                StartCoroutine(AnimateModalEntrance(_settingsModalCanvasGroup, _settingsListContainerRt));
             }
         }
 
@@ -1419,13 +1597,7 @@ namespace PolyFuse.UI
             bool active = !_settingsModalPanel.activeSelf;
             if (active)
             {
-                _settingsModalPanel.SetActive(true);
-                Time.timeScale = 0.0f;
-                UpdateSettingsButtonLabels();
-                if (_settingsModalCanvasGroup != null && _settingsListContainerRt != null)
-                {
-                    StartCoroutine(AnimateModalEntrance(_settingsModalCanvasGroup, _settingsListContainerRt));
-                }
+                OpenSettingsModal();
             }
             else
             {
@@ -1442,19 +1614,540 @@ namespace PolyFuse.UI
                     StartCoroutine(AnimateModalExit(_settingsModalCanvasGroup, _settingsListContainerRt, () =>
                     {
                         _settingsModalPanel.SetActive(false);
-                        Time.timeScale = 1.0f;
+                        if (PolyFuse.Gameplay.GameManager.Instance == null || !PolyFuse.Gameplay.GameManager.Instance.IsInHome)
+                        {
+                            Time.timeScale = 1.0f;
+                        }
                     }));
                 }
                 else
                 {
                     _settingsModalPanel.SetActive(false);
-                    Time.timeScale = 1.0f;
+                    if (PolyFuse.Gameplay.GameManager.Instance == null || !PolyFuse.Gameplay.GameManager.Instance.IsInHome)
+                    {
+                        Time.timeScale = 1.0f;
+                    }
                 }
             }
             else
             {
-                Time.timeScale = 1.0f;
+                if (PolyFuse.Gameplay.GameManager.Instance == null || !PolyFuse.Gameplay.GameManager.Instance.IsInHome)
+                {
+                    Time.timeScale = 1.0f;
+                }
             }
+        }
+
+        public void ShowHomeScreen(int highScore)
+        {
+            if (_homePanel != null)
+            {
+                _homePanel.transform.SetAsLastSibling();
+                _homePanel.SetActive(true);
+                if (_homeBestScoreText != null)
+                {
+                    _homeBestScoreText.text = highScore.ToString("N0");
+                }
+                if (_homeCanvasGroup != null && _homeCardRt != null)
+                {
+                    StartCoroutine(AnimateModalEntrance(_homeCanvasGroup, _homeCardRt));
+                }
+            }
+            SetTopHUDVisible(false);
+        }
+
+        public void HideHomeScreen(Action onFinished = null)
+        {
+            if (_homePanel != null && _homePanel.activeSelf)
+            {
+                if (_homeCanvasGroup != null && _homeCardRt != null)
+                {
+                    StartCoroutine(AnimateModalExit(_homeCanvasGroup, _homeCardRt, () =>
+                    {
+                        _homePanel.SetActive(false);
+                        SetTopHUDVisible(true);
+                        onFinished?.Invoke();
+                    }));
+                }
+                else
+                {
+                    _homePanel.SetActive(false);
+                    SetTopHUDVisible(true);
+                    onFinished?.Invoke();
+                }
+            }
+            else
+            {
+                SetTopHUDVisible(true);
+                onFinished?.Invoke();
+            }
+        }
+
+        public void OpenHowToPlayModal()
+        {
+            if (_howToPlayPanel != null)
+            {
+                _howToPlayPanel.transform.SetAsLastSibling();
+                _howToPlayPanel.SetActive(true);
+                if (_howToPlayCanvasGroup != null && _howToPlayCardRt != null)
+                {
+                    StartCoroutine(AnimateModalEntrance(_howToPlayCanvasGroup, _howToPlayCardRt));
+                }
+            }
+        }
+
+        public void CloseHowToPlayModal()
+        {
+            if (_howToPlayPanel != null && _howToPlayPanel.activeSelf)
+            {
+                if (_howToPlayCanvasGroup != null && _howToPlayCardRt != null)
+                {
+                    StartCoroutine(AnimateModalExit(_howToPlayCanvasGroup, _howToPlayCardRt, () =>
+                    {
+                        _howToPlayPanel.SetActive(false);
+                    }));
+                }
+                else
+                {
+                    _howToPlayPanel.SetActive(false);
+                }
+            }
+        }
+
+        private void SetTopHUDVisible(bool visible)
+        {
+            if (_scoreRt != null) _scoreRt.gameObject.SetActive(visible);
+            if (_highScoreRt != null) _highScoreRt.gameObject.SetActive(visible);
+            if (_settingsBtnRt != null) _settingsBtnRt.gameObject.SetActive(visible);
+            if (_comboRt != null) _comboRt.gameObject.SetActive(visible);
+        }
+
+        private void BuildHomeScreen(Transform parent, Font font)
+        {
+            _homePanel = new GameObject("HomePanel");
+            _homePanel.transform.SetParent(parent, false);
+            RectTransform hpRt = _homePanel.AddComponent<RectTransform>();
+            hpRt.anchorMin = Vector2.zero;
+            hpRt.anchorMax = Vector2.one;
+            hpRt.sizeDelta = Vector2.zero;
+
+            _homeCanvasGroup = _homePanel.AddComponent<CanvasGroup>();
+
+            // Ambient dark background veil (allows glowing board to show through)
+            Image hpBg = _homePanel.AddComponent<Image>();
+            hpBg.color = new Color(0.02f, 0.03f, 0.06f, 0.82f);
+
+            // Centered Home Card (840px wide)
+            GameObject cardObj = new GameObject("HomeCard");
+            cardObj.transform.SetParent(_homePanel.transform, false);
+            _homeCardRt = cardObj.AddComponent<RectTransform>();
+            _homeCardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            _homeCardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            _homeCardRt.pivot = new Vector2(0.5f, 0.5f);
+            _homeCardRt.sizeDelta = new Vector2(840f, 0f);
+
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.sprite = GetBorderedCardSprite();
+            cardBg.type = Image.Type.Sliced;
+            cardBg.color = Color.white;
+            AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
+
+            VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
+            cardLayout.padding = new RectOffset(44, 44, 44, 44);
+            cardLayout.spacing = 22f;
+            cardLayout.childAlignment = TextAnchor.UpperCenter;
+            cardLayout.childControlWidth = true;
+            cardLayout.childControlHeight = true;
+            cardLayout.childForceExpandWidth = true;
+            cardLayout.childForceExpandHeight = false;
+
+            ContentSizeFitter cardFitter = cardObj.AddComponent<ContentSizeFitter>();
+            cardFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            cardFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // 1. Logo Block (Emblem + Title + Tagline)
+            GameObject titleBlockObj = new GameObject("TitleBlock");
+            titleBlockObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement tbLe = titleBlockObj.AddComponent<LayoutElement>();
+            tbLe.preferredHeight = 136f;
+            tbLe.minHeight = 136f;
+
+            VerticalLayoutGroup tbVlg = titleBlockObj.AddComponent<VerticalLayoutGroup>();
+            tbVlg.padding = new RectOffset(0, 0, 0, 0);
+            tbVlg.spacing = 2f;
+            tbVlg.childAlignment = TextAnchor.MiddleCenter;
+            tbVlg.childControlWidth = true;
+            tbVlg.childControlHeight = true;
+            tbVlg.childForceExpandWidth = true;
+            tbVlg.childForceExpandHeight = false;
+
+            // Geometric Emblem Icon (Triad)
+            GameObject emblemObj = new GameObject("EmblemText");
+            emblemObj.transform.SetParent(titleBlockObj.transform, false);
+            Text emblemText = emblemObj.AddComponent<Text>();
+            emblemText.font = font;
+            emblemText.text = "▲   ⬡   ▼";
+            emblemText.fontSize = 22;
+            emblemText.fontStyle = FontStyle.Bold;
+            emblemText.alignment = TextAnchor.MiddleCenter;
+            emblemText.color = new Color(0.00f, 0.88f, 1.0f, 0.90f);
+            emblemText.raycastTarget = false;
+            emblemText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            emblemText.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement embLe = emblemObj.AddComponent<LayoutElement>();
+            embLe.preferredHeight = 28f;
+
+            // Logo Title: POLYFUSE
+            GameObject logoTextObj = new GameObject("LogoText");
+            logoTextObj.transform.SetParent(titleBlockObj.transform, false);
+            Text logoText = logoTextObj.AddComponent<Text>();
+            logoText.font = font;
+            logoText.text = "POLYFUSE";
+            logoText.fontSize = 68;
+            logoText.fontStyle = FontStyle.Bold;
+            logoText.alignment = TextAnchor.MiddleCenter;
+            logoText.color = Color.white;
+            logoText.raycastTarget = false;
+            logoText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            logoText.verticalOverflow = VerticalWrapMode.Overflow;
+            AddOutline(logoTextObj, new Color(0.00f, 0.85f, 1.0f, 0.65f), new Vector2(2f, -2f));
+            AddShadow(logoTextObj, new Color(0f, 0f, 0f, 0.90f), new Vector2(3f, -3f));
+            LayoutElement ltLe = logoTextObj.AddComponent<LayoutElement>();
+            ltLe.preferredHeight = 78f;
+
+            // Tagline: ENDLESS • SPATIAL • STRATEGY
+            GameObject tagTextObj = new GameObject("TaglineText");
+            tagTextObj.transform.SetParent(titleBlockObj.transform, false);
+            Text tagText = tagTextObj.AddComponent<Text>();
+            tagText.font = font;
+            tagText.text = "ENDLESS  •  SPATIAL  •  STRATEGY";
+            tagText.fontSize = 18;
+            tagText.fontStyle = FontStyle.Bold;
+            tagText.alignment = TextAnchor.MiddleCenter;
+            tagText.color = new Color(0.48f, 0.82f, 0.98f, 1.0f);
+            tagText.raycastTarget = false;
+            tagText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            tagText.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement ttLe = tagTextObj.AddComponent<LayoutElement>();
+            ttLe.preferredHeight = 26f;
+
+            // 2. Personal Best Inset (94px tall, with Gold border and 2-row layout)
+            GameObject bestPillObj = new GameObject("HomeBestPill");
+            bestPillObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement bpLe = bestPillObj.AddComponent<LayoutElement>();
+            bpLe.preferredHeight = 94f;
+            bpLe.minHeight = 94f;
+
+            Image bpImg = bestPillObj.AddComponent<Image>();
+            bpImg.sprite = GetGoldBorderedPillSprite();
+            bpImg.type = Image.Type.Sliced;
+            bpImg.color = Color.white;
+
+            VerticalLayoutGroup bpVlg = bestPillObj.AddComponent<VerticalLayoutGroup>();
+            bpVlg.padding = new RectOffset(14, 14, 10, 10);
+            bpVlg.spacing = 1f;
+            bpVlg.childAlignment = TextAnchor.MiddleCenter;
+            bpVlg.childControlWidth = true;
+            bpVlg.childControlHeight = true;
+            bpVlg.childForceExpandWidth = true;
+            bpVlg.childForceExpandHeight = false;
+
+            GameObject bestSubObj = new GameObject("SubLabel");
+            bestSubObj.transform.SetParent(bestPillObj.transform, false);
+            Text bestSub = bestSubObj.AddComponent<Text>();
+            bestSub.font = font;
+            bestSub.text = "★   PERSONAL BEST RECORD";
+            bestSub.fontSize = 16;
+            bestSub.fontStyle = FontStyle.Bold;
+            bestSub.alignment = TextAnchor.MiddleCenter;
+            bestSub.color = new Color(1.0f, 0.80f, 0.25f, 1.0f);
+            bestSub.raycastTarget = false;
+            bestSub.horizontalOverflow = HorizontalWrapMode.Overflow;
+            bestSub.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement bsLe = bestSubObj.AddComponent<LayoutElement>();
+            bsLe.preferredHeight = 22f;
+
+            GameObject bestTextObj = new GameObject("HomeBestScoreText");
+            bestTextObj.transform.SetParent(bestPillObj.transform, false);
+            _homeBestScoreText = bestTextObj.AddComponent<Text>();
+            _homeBestScoreText.font = font;
+            _homeBestScoreText.supportRichText = true;
+            _homeBestScoreText.raycastTarget = false;
+            _homeBestScoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _homeBestScoreText.verticalOverflow = VerticalWrapMode.Overflow;
+            _homeBestScoreText.text = "0";
+            _homeBestScoreText.fontSize = 36;
+            _homeBestScoreText.fontStyle = FontStyle.Bold;
+            _homeBestScoreText.alignment = TextAnchor.MiddleCenter;
+            _homeBestScoreText.color = new Color(1.0f, 0.90f, 0.40f, 1.0f);
+            LayoutElement btLe = bestTextObj.AddComponent<LayoutElement>();
+            btLe.preferredHeight = 44f;
+
+            // 3. Play Hero Button (108px tall)
+            GameObject playBtnObj = new GameObject("HomePlayButton");
+            playBtnObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement playLe = playBtnObj.AddComponent<LayoutElement>();
+            playLe.preferredHeight = 108f;
+            playLe.minHeight = 108f;
+
+            Image playImg = playBtnObj.AddComponent<Image>();
+            playImg.sprite = GetSubtleButtonSprite();
+            playImg.type = Image.Type.Sliced;
+            playImg.color = new Color(0.00f, 0.90f, 1.0f, 1.0f);
+            AddOutline(playBtnObj, new Color(0.00f, 0.90f, 1.0f, 0.50f), new Vector2(1.5f, -1.5f));
+
+            Button playBtn = playBtnObj.AddComponent<Button>();
+            playBtn.onClick.AddListener(() =>
+            {
+                HideHomeScreen(() =>
+                {
+                    OnPlayRequested?.Invoke();
+                });
+            });
+
+            GameObject playLabelObj = new GameObject("PlayLabel");
+            playLabelObj.transform.SetParent(playBtnObj.transform, false);
+            Text playLabel = playLabelObj.AddComponent<Text>();
+            playLabel.font = font;
+            playLabel.raycastTarget = false;
+            playLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            playLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            playLabel.text = "▶   PLAY";
+            playLabel.fontSize = 38;
+            playLabel.fontStyle = FontStyle.Bold;
+            playLabel.alignment = TextAnchor.MiddleCenter;
+            playLabel.color = new Color(0.04f, 0.07f, 0.12f, 1.0f);
+            RectTransform plRt = playLabelObj.GetComponent<RectTransform>();
+            plRt.anchorMin = Vector2.zero;
+            plRt.anchorMax = Vector2.one;
+            plRt.sizeDelta = Vector2.zero;
+
+            // 4. Secondary Action Row (How to Play & Settings - 84px tall)
+            GameObject optionsRowObj = new GameObject("HomeOptionsRow");
+            optionsRowObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement optLe = optionsRowObj.AddComponent<LayoutElement>();
+            optLe.preferredHeight = 84f;
+            optLe.minHeight = 84f;
+
+            HorizontalLayoutGroup optHlg = optionsRowObj.AddComponent<HorizontalLayoutGroup>();
+            optHlg.padding = new RectOffset(0, 0, 0, 0);
+            optHlg.spacing = 14f;
+            optHlg.childAlignment = TextAnchor.MiddleCenter;
+            optHlg.childControlWidth = true;
+            optHlg.childControlHeight = true;
+            optHlg.childForceExpandWidth = true;
+            optHlg.childForceExpandHeight = true;
+
+            // How To Play Button
+            CreatePillButton(optionsRowObj.transform, font, "?  HOW TO PLAY", () =>
+            {
+                OpenHowToPlayModal();
+            }, 24);
+
+            // Settings Button
+            CreatePillButton(optionsRowObj.transform, font, "⚙  SETTINGS", () =>
+            {
+                OpenSettingsModal();
+            }, 24);
+
+            _homePanel.SetActive(false);
+        }
+
+        private void BuildHowToPlayModal(Transform parent, Font font)
+        {
+            _howToPlayPanel = new GameObject("HowToPlayPanel");
+            _howToPlayPanel.transform.SetParent(parent, false);
+            RectTransform htpRt = _howToPlayPanel.AddComponent<RectTransform>();
+            htpRt.anchorMin = Vector2.zero;
+            htpRt.anchorMax = Vector2.one;
+            htpRt.sizeDelta = Vector2.zero;
+
+            _howToPlayCanvasGroup = _howToPlayPanel.AddComponent<CanvasGroup>();
+
+            // Dark backdrop - Tapping backdrop dismisses
+            Image htpBg = _howToPlayPanel.AddComponent<Image>();
+            htpBg.color = new Color(0.02f, 0.04f, 0.07f, 0.94f);
+            Button bgDismiss = _howToPlayPanel.AddComponent<Button>();
+            bgDismiss.onClick.AddListener(CloseHowToPlayModal);
+
+            // Card Container (840px wide)
+            GameObject cardObj = new GameObject("HowToPlayCard");
+            cardObj.transform.SetParent(_howToPlayPanel.transform, false);
+            _howToPlayCardRt = cardObj.AddComponent<RectTransform>();
+            _howToPlayCardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            _howToPlayCardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            _howToPlayCardRt.pivot = new Vector2(0.5f, 0.5f);
+            _howToPlayCardRt.sizeDelta = new Vector2(840f, 0f);
+
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.sprite = GetBorderedCardSprite();
+            cardBg.type = Image.Type.Sliced;
+            cardBg.color = Color.white;
+            AddShadow(cardObj, new Color(0f, 0f, 0f, 0.85f), new Vector2(0f, -10f));
+
+            VerticalLayoutGroup cardLayout = cardObj.AddComponent<VerticalLayoutGroup>();
+            cardLayout.padding = new RectOffset(42, 42, 40, 40);
+            cardLayout.spacing = 16f;
+            cardLayout.childAlignment = TextAnchor.UpperCenter;
+            cardLayout.childControlWidth = true;
+            cardLayout.childControlHeight = true;
+            cardLayout.childForceExpandWidth = true;
+            cardLayout.childForceExpandHeight = false;
+
+            ContentSizeFitter cardFitter = cardObj.AddComponent<ContentSizeFitter>();
+            cardFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            cardFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Header Title
+            GameObject titleObj = new GameObject("HTPTitle");
+            titleObj.transform.SetParent(cardObj.transform, false);
+            Text title = titleObj.AddComponent<Text>();
+            title.font = font;
+            title.text = "HOW TO PLAY";
+            title.fontSize = 42;
+            title.fontStyle = FontStyle.Bold;
+            title.alignment = TextAnchor.MiddleCenter;
+            title.color = Color.white;
+            title.raycastTarget = false;
+            title.horizontalOverflow = HorizontalWrapMode.Overflow;
+            title.verticalOverflow = VerticalWrapMode.Overflow;
+            AddShadow(titleObj, new Color(0f, 0f, 0f, 0.9f), new Vector2(2f, -2f));
+            LayoutElement tLe = titleObj.AddComponent<LayoutElement>();
+            tLe.minHeight = 48f;
+            tLe.preferredHeight = 48f;
+
+            // Rule 1: Interlocking Grid
+            CreateInstructionCard(cardObj.transform, font, "▲ ▼   INTERLOCKING CANVAS", 
+                "Drag polyform pieces onto alternating Up and Down isometric triangular slots.",
+                new Color(0.25f, 0.75f, 0.98f, 1.0f));
+
+            // Rule 2: 3-Axis Line Clearing
+            CreateInstructionCard(cardObj.transform, font, "— / \\   3-AXIS LINE CLEARS", 
+                "Complete continuous lines along Horizontal, Diagonal Slash, or Backslash axes.",
+                new Color(0.25f, 0.75f, 0.98f, 1.0f));
+
+            // Rule 3: The Greed Engine & Grace Buffers
+            CreateInstructionCard(cardObj.transform, font, "★   THE GREED ENGINE", 
+                "Chain consecutive clears to multiply score! Multi-cleaves grant extended Grace Runs.",
+                new Color(1.0f, 0.80f, 0.25f, 1.0f));
+
+            // Hero Got It Button (98px)
+            GameObject gotItBtnObj = new GameObject("GotItButton");
+            gotItBtnObj.transform.SetParent(cardObj.transform, false);
+            LayoutElement giLe = gotItBtnObj.AddComponent<LayoutElement>();
+            giLe.preferredHeight = 98f;
+            giLe.minHeight = 98f;
+
+            Image giImg = gotItBtnObj.AddComponent<Image>();
+            giImg.sprite = GetSubtleButtonSprite();
+            giImg.type = Image.Type.Sliced;
+            giImg.color = new Color(0.00f, 0.90f, 1.0f, 1.0f);
+            AddOutline(gotItBtnObj, new Color(0.00f, 0.90f, 1.0f, 0.50f), new Vector2(1.5f, -1.5f));
+
+            Button giBtn = gotItBtnObj.AddComponent<Button>();
+            giBtn.onClick.AddListener(CloseHowToPlayModal);
+
+            GameObject giLabelObj = new GameObject("GILabel");
+            giLabelObj.transform.SetParent(gotItBtnObj.transform, false);
+            Text giLabel = giLabelObj.AddComponent<Text>();
+            giLabel.font = font;
+            giLabel.raycastTarget = false;
+            giLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            giLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            giLabel.text = "✓   GOT IT!";
+            giLabel.fontSize = 34;
+            giLabel.fontStyle = FontStyle.Bold;
+            giLabel.alignment = TextAnchor.MiddleCenter;
+            giLabel.color = new Color(0.04f, 0.07f, 0.12f, 1.0f);
+            RectTransform glRt = giLabelObj.GetComponent<RectTransform>();
+            glRt.anchorMin = Vector2.zero;
+            glRt.anchorMax = Vector2.one;
+            glRt.sizeDelta = Vector2.zero;
+
+            _howToPlayPanel.SetActive(false);
+        }
+
+        private void CreateInstructionCard(Transform parent, Font font, string heading, string description, Color? headingColor = null)
+        {
+            GameObject rowObj = new GameObject($"Instruction_{heading}");
+            rowObj.transform.SetParent(parent, false);
+            LayoutElement rLe = rowObj.AddComponent<LayoutElement>();
+            rLe.preferredHeight = 108f;
+            rLe.minHeight = 108f;
+
+            Image bg = rowObj.AddComponent<Image>();
+            bg.sprite = GetBorderedPillSprite();
+            bg.type = Image.Type.Sliced;
+            bg.color = Color.white;
+
+            VerticalLayoutGroup vlg = rowObj.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(24, 24, 12, 12);
+            vlg.spacing = 3f;
+            vlg.childAlignment = TextAnchor.MiddleLeft;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+
+            GameObject hObj = new GameObject("Heading");
+            hObj.transform.SetParent(rowObj.transform, false);
+            Text hText = hObj.AddComponent<Text>();
+            hText.font = font;
+            hText.text = heading;
+            hText.fontSize = 20;
+            hText.fontStyle = FontStyle.Bold;
+            hText.color = headingColor ?? new Color(0.25f, 0.75f, 0.98f, 1.0f); // Light cyan
+            hText.raycastTarget = false;
+            hText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            hText.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement hLe = hObj.AddComponent<LayoutElement>();
+            hLe.preferredHeight = 26f;
+
+            GameObject dObj = new GameObject("Desc");
+            dObj.transform.SetParent(rowObj.transform, false);
+            Text dText = dObj.AddComponent<Text>();
+            dText.font = font;
+            dText.text = description;
+            dText.fontSize = 17;
+            dText.fontStyle = FontStyle.Normal;
+            dText.color = new Color(0.88f, 0.92f, 0.96f, 1.0f);
+            dText.raycastTarget = false;
+            dText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            dText.verticalOverflow = VerticalWrapMode.Overflow;
+            LayoutElement dLe = dObj.AddComponent<LayoutElement>();
+            dLe.preferredHeight = 46f;
+        }
+
+        private void CreatePillButton(Transform parent, Font font, string text, Action onClick, int fontSize = 24)
+        {
+            GameObject btnObj = new GameObject($"PillBtn_{text}");
+            btnObj.transform.SetParent(parent, false);
+
+            Image bg = btnObj.AddComponent<Image>();
+            bg.sprite = GetBorderedPillSprite();
+            bg.type = Image.Type.Sliced;
+            bg.color = Color.white;
+
+            Button btn = btnObj.AddComponent<Button>();
+            btn.onClick.AddListener(() => onClick?.Invoke());
+
+            GameObject labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(btnObj.transform, false);
+            Text label = labelObj.AddComponent<Text>();
+            label.font = font;
+            label.text = text;
+            label.fontSize = fontSize;
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.color = new Color(0.70f, 0.82f, 0.95f, 1.0f);
+            label.raycastTarget = false;
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            label.verticalOverflow = VerticalWrapMode.Overflow;
+
+            RectTransform lRt = labelObj.GetComponent<RectTransform>();
+            lRt.anchorMin = Vector2.zero;
+            lRt.anchorMax = Vector2.one;
+            lRt.sizeDelta = Vector2.zero;
         }
 
         private IEnumerator AnimateModalEntrance(CanvasGroup cg, RectTransform container)

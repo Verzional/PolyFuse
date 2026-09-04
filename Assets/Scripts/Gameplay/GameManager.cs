@@ -29,8 +29,10 @@ namespace PolyFuse.Gameplay
         private DualClearEvaluator _evaluator;
         private bool _isGameOver;
         private bool _inDangerMode;
+        private bool _isInHome = true;
 
         public bool IsGameOver => _isGameOver;
+        public bool IsInHome => _isInHome;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoBootstrapOnPlay()
@@ -60,7 +62,7 @@ namespace PolyFuse.Gameplay
 
         private void Start()
         {
-            StartNewGame();
+            ReturnToHome();
         }
 
         private void EnsureComponentsAndSetup()
@@ -194,6 +196,8 @@ namespace PolyFuse.Gameplay
             if (_ui != null)
             {
                 _ui.OnRestartRequested += StartNewGame;
+                _ui.OnPlayRequested += StartNewGame;
+                _ui.OnHomeRequested += ReturnToHome;
             }
 
             // Event bindings
@@ -222,20 +226,46 @@ namespace PolyFuse.Gameplay
             };
         }
 
-        public void StartNewGame()
+        public void ReturnToHome()
         {
+            _isInHome = true;
             _isGameOver = false;
             _inDangerMode = false;
-            _audio.PlayHeartbeat(false);
+            _audio?.PlayHeartbeat(false);
             BoardAuraController.Instance?.SetDangerState(false);
             if (_ui != null) _ui.SetDangerState(false);
             _board.ResetBoard();
             _greedEngine.ResetGame();
             BoardAuraController.Instance?.SetComboState(0);
+            _trayManager.ClearHand();
+            Time.timeScale = 1.0f;
 
             if (_ui != null)
             {
                 _ui.HideGameOver();
+                _ui.CloseSettingsModal();
+                _ui.ShowHomeScreen(_greedEngine.HighScore);
+            }
+        }
+
+        public void StartNewGame()
+        {
+            _isInHome = false;
+            _isGameOver = false;
+            _inDangerMode = false;
+            _audio?.PlayHeartbeat(false);
+            BoardAuraController.Instance?.SetDangerState(false);
+            if (_ui != null) _ui.SetDangerState(false);
+            _board.ResetBoard();
+            _greedEngine.ResetGame();
+            BoardAuraController.Instance?.SetComboState(0);
+            Time.timeScale = 1.0f;
+
+            if (_ui != null)
+            {
+                _ui.HideGameOver();
+                _ui.HideHomeScreen();
+                _ui.CloseSettingsModal();
                 _ui.UpdateScore(0, _greedEngine.HighScore);
             }
 
