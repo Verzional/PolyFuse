@@ -302,7 +302,8 @@ namespace PolyFuse.Gameplay
                     _juice.TriggerLineClearShake();
                 }
 
-                int activeStreak = _greedEngine.ComboStreak + 1;
+                int streakJump = Mathf.Clamp(result.TotalLines, 1, 4);
+                int activeStreak = _greedEngine.ComboStreak + streakJump;
                 BoardAuraController.Instance?.TriggerClearSurge(activeStreak);
 
                 if (result.TotalLines >= 2)
@@ -360,7 +361,23 @@ namespace PolyFuse.Gameplay
                 }
 
                 int pointsGained = _greedEngine.ProcessTurnClears(result, isWipe);
-                WorldSpacePopupManager.Instance?.SpawnCleavePopup(clearCenterPos, result.TotalLines, pointsGained, activeStreak, isWipe);
+                TurnClearEventData clearData = _greedEngine.LastTurnClearData;
+                WorldSpacePopupManager.Instance?.SpawnCleavePopup(clearCenterPos, clearData);
+
+                if (clearData.isClutchSave)
+                {
+                    _audio.PlayClutchSave();
+                    HapticFeedbackManager.Instance?.PlayHeavy();
+                    ProceduralParticleManager.Instance?.SpawnGoldenStarburst(clearCenterPos);
+                }
+                else if (clearData.distinctAxes >= 2)
+                {
+                    _audio.PlayCrossAxisConvergence(clearData.distinctAxes);
+                    if (clearData.distinctAxes >= 3)
+                    {
+                        ProceduralParticleManager.Instance?.SpawnGoldenStarburst(clearCenterPos);
+                    }
+                }
             }
             else
             {
