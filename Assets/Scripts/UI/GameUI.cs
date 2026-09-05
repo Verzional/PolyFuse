@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using PolyFuse.Gameplay;
 using PolyFuse.Juice;
 using UnityEngine;
 using UnityEngine.UI;
@@ -1114,11 +1115,14 @@ namespace PolyFuse.UI
                 else if (comboStreak == 6) hypeColor = new Color(0.02f, 0.71f, 0.83f, 1.0f); // Electric Cyan
                 else hypeColor = new Color(0.66f, 0.33f, 0.97f, 1.0f); // Prismatic Purple
 
+                float mult = GreedEngine.CalculateComboMultiplier(comboStreak);
+                string multStr = GreedEngine.FormatMultiplierString(mult);
+
                 int totalPips = Mathf.Max(3, graceCapacity);
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-                // Format: e.g. "‹ 3× ›   ▲  ▲  ▲   ‹ 3× ›"
-                sb.Append($"<size=44><b>‹ {comboStreak}× ›</b></size>   ");
+                // Format: e.g. "‹ 3.5× ›   ▲  ▲  ▲   ‹ 3.5× ›"
+                sb.Append($"<size=44><b>‹ {multStr} ›</b></size>   ");
 
                 for (int i = 0; i < totalPips; i++)
                 {
@@ -1139,7 +1143,7 @@ namespace PolyFuse.UI
                     }
                 }
 
-                sb.Append($"  <size=44><b>‹ {comboStreak}× ›</b></size>");
+                sb.Append($"  <size=44><b>‹ {multStr} ›</b></size>");
 
                 _comboText.text = sb.ToString();
                 _comboText.color = hypeColor;
