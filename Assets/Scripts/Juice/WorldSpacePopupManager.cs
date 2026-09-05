@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using PolyFuse.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -53,6 +54,88 @@ namespace PolyFuse.Juice
             if (_font == null) _font = Resources.Load<Font>("Fonts/PolyFuse-MainFont");
             if (_font == null) _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        }
+
+        public void SpawnCleavePopup(Vector3 worldPos, TurnClearEventData clearData)
+        {
+            if (_worldCanvas == null) BuildWorldCanvas();
+
+            GameObject popupObj = GetOrCreatePopup();
+            popupObj.SetActive(true);
+
+            // Center on cleared tiles with comfortable upward offset
+            popupObj.transform.position = new Vector3(worldPos.x, worldPos.y + 0.10f, 0f);
+
+            Text titleText = popupObj.transform.Find("TitleText")?.GetComponent<Text>();
+            Text scoreText = popupObj.transform.Find("ScoreText")?.GetComponent<Text>();
+            CanvasGroup group = popupObj.GetComponent<CanvasGroup>();
+
+            string title = clearData.primaryTitle;
+            Color themeColor;
+
+            if (clearData.isBoardWipe)
+            {
+                themeColor = new Color(0.88f, 0.45f, 1.0f); // Prismatic Purple
+            }
+            else if (clearData.distinctAxes == 3)
+            {
+                themeColor = new Color(0.20f, 0.95f, 0.85f); // Electric Cyan / Radiant Mint
+            }
+            else if (clearData.distinctAxes == 2)
+            {
+                themeColor = new Color(0.35f, 0.85f, 1.0f); // Sky Cyan Convergence
+            }
+            else if (clearData.isClutchSave)
+            {
+                themeColor = new Color(1.0f, 0.35f, 0.50f); // Neon Coral / Clutch Red
+            }
+            else if (clearData.linesCleared >= 4)
+            {
+                themeColor = new Color(0.98f, 0.28f, 0.48f); // Coral Supernova
+            }
+            else if (clearData.linesCleared == 3)
+            {
+                themeColor = new Color(0.18f, 0.88f, 1.0f); // Electric Cyan
+            }
+            else if (clearData.linesCleared == 2)
+            {
+                themeColor = new Color(1.0f, 0.82f, 0.20f); // Warm Amber Gold
+            }
+            else
+            {
+                if (clearData.comboStreak >= 7)
+                    themeColor = new Color(0.88f, 0.45f, 1.0f); // Prismatic Purple
+                else if (clearData.comboStreak >= 5)
+                    themeColor = new Color(0.98f, 0.28f, 0.48f); // Magenta/Coral
+                else if (clearData.comboStreak >= 2)
+                    themeColor = new Color(1.0f, 0.82f, 0.20f); // Warm Amber Gold
+                else
+                    themeColor = new Color(0.92f, 0.96f, 1.0f); // Crisp White
+            }
+
+            if (titleText != null)
+            {
+                titleText.text = title;
+                titleText.color = themeColor;
+                titleText.gameObject.SetActive(!string.IsNullOrEmpty(title));
+            }
+
+            if (scoreText != null)
+            {
+                string multiplierTag = (clearData.comboMultiplier > 1.0f)
+                    ? $" <size=34><color=#FCD34D>{clearData.multiplierString}</color></size>"
+                    : "";
+                scoreText.text = $"+{clearData.totalPointsGained:N0}{multiplierTag}";
+                scoreText.color = themeColor;
+            }
+
+            // Alternating dynamic action tilt (never same angle twice)
+            _spawnCounter++;
+            bool isLeft = (_spawnCounter % 2 == 1);
+            float targetAngle = isLeft ? Random.Range(-6.5f, -4.5f) : Random.Range(4.5f, 6.5f);
+            float startAngle = isLeft ? (targetAngle - 4.5f) : (targetAngle + 4.5f);
+
+            StartCoroutine(AnimatePopup(popupObj, group, startAngle, targetAngle));
         }
 
         public void SpawnCleavePopup(Vector3 worldPos, int lineCount, int pointsEarned, int comboStreak, bool isBoardWipe = false)
