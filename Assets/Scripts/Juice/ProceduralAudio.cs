@@ -19,6 +19,9 @@ namespace PolyFuse.Juice
         private AudioClip _heartbeatClip;
         private AudioClip _closeCallClip;
         private AudioClip _newBestClip;
+        private AudioClip _clutchSaveClip;
+        private AudioClip _crossAxisClip;
+        private AudioClip _triAxisClip;
 
         // Ascending Pentatonic / Major Scale root frequencies (C4 to C6)
         private static readonly float[] ComboFrequencies = new float[]
@@ -239,9 +242,78 @@ namespace PolyFuse.Juice
                 return (n1 + n2 + n3 + n4 + n5 + c1 + c2 + c3 + c4 + c5 + c6 + shimmer) * 0.50f;
             });
 
+            // 9. "CLUTCH SAVE!" Heroic Crystal Surge: Rapid ascending arpeggio with sharp metallic resonance
+            _clutchSaveClip = CreateSynthClip("ClutchSave", 0.65f, (t, dur) =>
+            {
+                float n1 = SynthesizeChimeNote(t, 0.000f, 739.99f, 0.70f);  // F#5
+                float n2 = SynthesizeChimeNote(t, 0.038f, 880.00f, 0.75f);  // A5
+                float n3 = SynthesizeChimeNote(t, 0.076f, 1108.73f, 0.85f); // C#6
+                float n4 = SynthesizeChimeNote(t, 0.114f, 1479.98f, 0.90f); // F#6
+
+                // Heroic chord surge at t = 0.140s
+                float c1 = SynthesizeChimeNote(t, 0.140f, 739.99f, 0.50f);
+                float c2 = SynthesizeChimeNote(t, 0.140f, 1108.73f, 0.60f);
+                float c3 = SynthesizeChimeNote(t, 0.140f, 1479.98f, 0.65f);
+                float c4 = SynthesizeChimeNote(t, 0.140f, 1760.00f, 0.50f);
+
+                // High metallic strike ping
+                float ping = 0f;
+                if (t > 0.140f)
+                {
+                    float tp = t - 0.140f;
+                    ping = Mathf.Sin(2f * Mathf.PI * 3520f * tp) * 0.25f * Mathf.Exp(-tp * 18.0f);
+                }
+
+                return (n1 + n2 + n3 + n4 + c1 + c2 + c3 + c4 + ping) * 0.60f;
+            });
+
+            // 10. "DUAL-AXIS CROSS!" Harmonious 2-pole geometric convergence chord
+            _crossAxisClip = CreateSynthClip("CrossAxis", 0.70f, (t, dur) =>
+            {
+                float n1 = SynthesizeChimeNote(t, 0.000f, 659.25f, 0.70f);  // E5
+                float n2 = SynthesizeChimeNote(t, 0.035f, 830.61f, 0.75f);  // G#5
+                float n3 = SynthesizeChimeNote(t, 0.070f, 987.77f, 0.80f);  // B5
+
+                // Convergence chord
+                float c1 = SynthesizeChimeNote(t, 0.095f, 659.25f, 0.55f);  // E5
+                float c2 = SynthesizeChimeNote(t, 0.095f, 987.77f, 0.60f);  // B5
+                float c3 = SynthesizeChimeNote(t, 0.095f, 1318.51f, 0.65f); // E6
+                float c4 = SynthesizeChimeNote(t, 0.095f, 1661.22f, 0.50f); // G#6
+
+                return (n1 + n2 + n3 + c1 + c2 + c3 + c4) * 0.60f;
+            });
+
+            // 11. "TRI-AXIS TRINITY!" Celestial 3-frequency major triad alignment
+            _triAxisClip = CreateSynthClip("TriAxis", 0.85f, (t, dur) =>
+            {
+                float n1 = SynthesizeChimeNote(t, 0.000f, 523.25f, 0.65f);  // C5
+                float n2 = SynthesizeChimeNote(t, 0.032f, 659.25f, 0.70f);  // E5
+                float n3 = SynthesizeChimeNote(t, 0.064f, 783.99f, 0.75f);  // G5
+                float n4 = SynthesizeChimeNote(t, 0.096f, 1046.50f, 0.80f); // C6
+
+                // Grand Trinity Chord at t = 0.125s
+                float c1 = SynthesizeChimeNote(t, 0.125f, 523.25f, 0.50f);  // C5
+                float c2 = SynthesizeChimeNote(t, 0.125f, 783.99f, 0.55f);  // G5
+                float c3 = SynthesizeChimeNote(t, 0.125f, 1046.50f, 0.60f); // C6
+                float c4 = SynthesizeChimeNote(t, 0.125f, 1318.51f, 0.55f); // E6
+                float c5 = SynthesizeChimeNote(t, 0.125f, 1567.98f, 0.50f); // G6
+                float c6 = SynthesizeChimeNote(t, 0.125f, 2093.00f, 0.40f); // C7
+
+                // Tight Sub punch for dimensional weight
+                float sub = 0f;
+                if (t > 0.125f)
+                {
+                    float ts = t - 0.125f;
+                    sub = Mathf.Sin(2f * Mathf.PI * 65.41f * ts) * 0.45f * Mathf.Exp(-ts * 14.0f);
+                }
+
+                return (n1 + n2 + n3 + n4 + c1 + c2 + c3 + c4 + c5 + c6 + sub) * 0.50f;
+            });
+
             InitHeartbeatSource();
             UpdateMuteState();
         }
+
 
         private static float SynthesizeChimeNote(float t, float onset, float freq, float ampWeight)
         {
@@ -447,6 +519,22 @@ namespace PolyFuse.Juice
             if (_fanfareSource == null || _boardWipeClip == null || !_soundEnabled) return;
             _fanfareSource.pitch = 1.0f;
             _fanfareSource.PlayOneShot(_boardWipeClip, 1.0f);
+        }
+
+        public void PlayClutchSave()
+        {
+            if (_fanfareSource == null || _clutchSaveClip == null || !_soundEnabled) return;
+            _fanfareSource.pitch = 1.0f;
+            _fanfareSource.PlayOneShot(_clutchSaveClip, 1.0f);
+        }
+
+        public void PlayCrossAxisConvergence(int distinctAxes)
+        {
+            if (_fanfareSource == null || !_soundEnabled) return;
+            AudioClip clip = (distinctAxes >= 3) ? _triAxisClip : _crossAxisClip;
+            if (clip == null) return;
+            _fanfareSource.pitch = 1.0f;
+            _fanfareSource.PlayOneShot(clip, 1.0f);
         }
 
         public void PlayGameOver()
